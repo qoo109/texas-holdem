@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>德州撲克</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="table">
+        <div class="top-bar">
+          <div>
+            <p class="eyebrow">No-limit Hold'em</p>
+            <h1>德州撲克</h1>
+          </div>
+          <button id="newHandButton" class="ghost-button" type="button">新牌局</button>
+        </div>
+
+        <div class="status-strip" aria-label="牌局狀態">
+          <div>
+            <span>底池</span>
+            <strong id="potValue">0</strong>
+          </div>
+          <div>
+            <span>目前注額</span>
+            <strong id="currentBetValue">0</strong>
+          </div>
+          <div>
+            <span>階段</span>
+            <strong id="streetValue">翻牌前</strong>
+          </div>
+        </div>
+
+        <section class="arena" aria-label="牌桌">
+          <div id="opponents" class="opponents"></div>
+
+          <section class="board-zone" aria-label="公共牌">
+            <div class="pot-chip">
+              <span>Pot</span>
+              <strong id="tablePotValue">0</strong>
+            </div>
+            <div class="board-label">公共牌</div>
+            <div id="boardCards" class="cards board-cards"></div>
+          </section>
+
+          <section class="player-zone">
+            <div class="player-panel">
+              <div>
+                <p class="seat-label">你的手牌</p>
+                <h2 id="playerName">玩家</h2>
+                <p id="playerHandRank" class="hand-rank">等待發牌</p>
+              </div>
+              <div class="stack-pill">籌碼 <strong id="playerStack">0</strong></div>
+            </div>
+            <div id="playerCards" class="cards player-cards"></div>
+          </section>
+        </section>
+
+        <section class="controls" aria-label="動作">
+          <button id="foldButton" type="button">棄牌</button>
+          <button id="callButton" type="button">跟注</button>
+          <button id="raiseButton" type="button">加注</button>
+          <label class="raise-control">
+            <span class="raise-caption">加注額</span>
+            <span class="range-shell">
+              <input id="raiseAmount" type="range" min="20" max="200" step="10" value="60" />
+            </span>
+            <strong id="raiseAmountValue">60</strong>
+          </label>
+        </section>
+
+        <aside class="log-panel" aria-label="牌局紀錄">
+          <h2>牌局紀錄</h2>
+          <div id="gameLog" class="game-log"></div>
+        </aside>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
