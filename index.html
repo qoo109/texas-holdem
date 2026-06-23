@@ -32,13 +32,21 @@
           </div>
         </div>
 
-        <section class="arena" aria-label="牌桌">
+        <section id="arena" class="arena" aria-label="牌桌">
+          <div class="table-light" aria-hidden="true"></div>
+          <div class="deck-stack" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div id="actionToast" class="action-toast" aria-live="polite">新牌局開始</div>
           <div id="opponents" class="opponents"></div>
 
           <section class="board-zone" aria-label="公共牌">
             <div class="pot-chip">
               <span>Pot</span>
               <strong id="tablePotValue">0</strong>
+              <div id="potChips" class="pot-chips" aria-hidden="true"></div>
             </div>
             <div class="board-label">公共牌</div>
             <div id="boardCards" class="cards board-cards"></div>
@@ -55,6 +63,13 @@
             </div>
             <div id="playerCards" class="cards player-cards"></div>
           </section>
+
+          <div class="chip-rack" aria-hidden="true">
+            <span class="chip chip-gold"></span>
+            <span class="chip chip-red"></span>
+            <span class="chip chip-cyan"></span>
+            <span class="chip chip-blue"></span>
+          </div>
         </section>
 
         <section class="controls" aria-label="動作">

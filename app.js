@@ -40,11 +40,16 @@ const state = {
   street: "翻牌前",
   handOver: false,
   players: [],
+  lastEvent: "新牌局開始",
 };
 
 const els = {
+  table: document.querySelector(".table"),
+  arena: document.querySelector("#arena"),
+  actionToast: document.querySelector("#actionToast"),
   opponents: document.querySelector("#opponents"),
   boardCards: document.querySelector("#boardCards"),
+  potChips: document.querySelector("#potChips"),
   playerCards: document.querySelector("#playerCards"),
   potValue: document.querySelector("#potValue"),
   tablePotValue: document.querySelector("#tablePotValue"),
@@ -98,6 +103,7 @@ function startHand() {
   postBlind(state.players[1], 10, "小盲");
   postBlind(state.players[2], 20, "大盲");
   log("新牌局開始，盲注 10 / 20。");
+  announce("新牌局開始");
   render();
 }
 
@@ -128,6 +134,7 @@ function playerAction(action) {
     human().folded = true;
     human().status = "棄牌";
     log("你棄牌。");
+    announce("你棄牌");
     finishByFoldIfNeeded();
   }
 
@@ -143,6 +150,7 @@ function playerAction(action) {
     state.currentBet = human().bet;
     human().status = `加注到 ${state.currentBet}`;
     log(`你加注到 ${state.currentBet}。`);
+    announce(`你加注到 ${state.currentBet}`);
   }
 
   if (!state.handOver) {
@@ -156,6 +164,7 @@ function callPlayer(player, messagePrefix) {
   const paid = pay(player, needed);
   player.status = paid === 0 ? "過牌" : `跟注 ${paid}`;
   log(`${messagePrefix}${paid === 0 ? "，過牌。" : ` ${paid}。`}`);
+  announce(paid === 0 ? "過牌" : `跟注 ${paid}`);
 }
 
 function pay(player, amount) {
@@ -180,6 +189,7 @@ function botRound() {
       player.folded = true;
       player.status = "棄牌";
       log(`${player.name} 棄牌。`);
+      announce(`${player.name} 棄牌`);
       if (finishByFoldIfNeeded()) return;
       continue;
     }
@@ -190,12 +200,14 @@ function botRound() {
       state.currentBet = Math.max(state.currentBet, player.bet);
       player.status = `加注到 ${player.bet}`;
       log(`${player.name} 加注到 ${player.bet}。`);
+      announce(`${player.name} 加注`);
       continue;
     }
 
     const paid = pay(player, needed);
     player.status = paid === 0 ? "過牌" : `跟注 ${paid}`;
     log(`${player.name}${paid === 0 ? "過牌" : `跟注 ${paid}`}。`);
+    announce(`${player.name}${paid === 0 ? "過牌" : "跟注"}`);
   }
 
   if (!finishByFoldIfNeeded()) {
@@ -203,6 +215,7 @@ function botRound() {
     if (humanCall > 0 && !human().allIn) {
       human().status = `需跟注 ${humanCall}`;
       log(`行動回到你，需跟注 ${humanCall}。`);
+      announce(`輪到你：跟注 ${humanCall}`);
       return;
     }
     advanceStreet();
@@ -242,6 +255,7 @@ function advanceStreet() {
     state.board.push(state.deck.pop(), state.deck.pop(), state.deck.pop());
     state.street = "翻牌";
     log("翻牌發出。");
+    announce("翻牌發出");
     render();
     return;
   }
@@ -250,6 +264,7 @@ function advanceStreet() {
     state.board.push(state.deck.pop());
     state.street = "轉牌";
     log("轉牌發出。");
+    announce("轉牌發出");
     render();
     return;
   }
@@ -258,6 +273,7 @@ function advanceStreet() {
     state.board.push(state.deck.pop());
     state.street = "河牌";
     log("河牌發出。");
+    announce("河牌發出");
     render();
     return;
   }
@@ -390,15 +406,17 @@ function combinations(items, size) {
 }
 
 function render() {
+  els.table.classList.toggle("is-showdown", state.handOver);
   els.potValue.textContent = state.pot;
   els.tablePotValue.textContent = state.pot;
+  els.potChips.innerHTML = renderPotChips(state.pot);
   els.currentBetValue.textContent = state.currentBet;
   els.streetValue.textContent = state.street;
   els.playerStack.textContent = human().stack;
-  els.playerCards.innerHTML = human().cards.map(renderCard).join("");
+  els.playerCards.innerHTML = human().cards.map((card, index) => renderCard(card, index)).join("");
   els.boardCards.innerHTML = state.board.length
-    ? state.board.map(renderCard).join("")
-    : Array.from({ length: 5 }, () => renderCard(null)).join("");
+    ? state.board.map((card, index) => renderCard(card, index)).join("")
+    : Array.from({ length: 5 }, (_, index) => renderCard(null, index)).join("");
   els.playerHandRank.textContent =
     state.board.length >= 3 ? evaluateBestHand([...human().cards, ...state.board]).name : "翻牌後會顯示目前牌型";
 
@@ -415,7 +433,7 @@ function render() {
             </div>
             <div class="seat-status">${player.status}</div>
           </div>
-          <div class="cards">${player.cards.map((card) => renderCard(reveal ? card : null)).join("")}</div>
+          <div class="cards">${player.cards.map((card, index) => renderCard(reveal ? card : null, index)).join("")}</div>
         </article>
       `;
     })
@@ -428,15 +446,37 @@ function render() {
   els.callButton.textContent = amountToCall(human()) ? `跟注 ${amountToCall(human())}` : "過牌";
 }
 
-function renderCard(card) {
-  if (!card) return '<div class="card back"><span class="rank">?</span></div>';
+function renderCard(card, index = 0) {
+  const delay = `style="--card-index: ${index}"`;
+  if (!card) return `<div class="card back" ${delay}><span class="rank">?</span></div>`;
   const red = card.suit === "h" || card.suit === "d";
   return `
-    <div class="card ${red ? "red" : ""}">
+    <div class="card ${red ? "red" : ""}" ${delay}>
       <span class="rank">${card.label}</span>
       <span class="suit">${card.suitSymbol}</span>
     </div>
   `;
+}
+
+function renderPotChips(pot) {
+  const count = Math.min(10, Math.max(1, Math.ceil(pot / 70)));
+  const colors = ["chip-gold", "chip-red", "chip-cyan", "chip-blue"];
+  return Array.from({ length: count }, (_, index) => {
+    const color = colors[index % colors.length];
+    const left = 3 + (index % 4) * 7;
+    const bottom = Math.floor(index / 4) * 6;
+    const delay = index * 34;
+    return `<span class="chip ${color}" style="left: ${left}px; bottom: ${bottom}px; animation-delay: ${delay}ms"></span>`;
+  }).join("");
+}
+
+function announce(message) {
+  state.lastEvent = message;
+  if (!els.actionToast) return;
+  els.actionToast.textContent = message;
+  els.actionToast.classList.remove("is-visible");
+  void els.actionToast.offsetWidth;
+  els.actionToast.classList.add("is-visible");
 }
 
 function log(message) {

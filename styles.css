@@ -12,6 +12,7 @@
   --card-ink: #17191b;
   --cyan: #70d8c9;
   --blue: #273e78;
+  --violet: #7f6df2;
 }
 
 * {
@@ -27,6 +28,7 @@ body {
     radial-gradient(circle at 88% 20%, rgba(233, 188, 101, 0.15), transparent 24rem),
     linear-gradient(135deg, #070b12 0%, #101923 48%, #15110d 100%);
   color: var(--ink);
+  overflow-x: hidden;
 }
 
 button,
@@ -177,6 +179,8 @@ h2 {
     inset 0 0 0 10px rgba(255, 255, 255, 0.04),
     inset 0 0 0 18px rgba(0, 0, 0, 0.18);
   overflow: hidden;
+  perspective: 980px;
+  transform-style: preserve-3d;
 }
 
 .arena::before {
@@ -186,6 +190,82 @@ h2 {
   border: 1px dashed rgba(255, 255, 255, 0.16);
   border-radius: 50%;
   pointer-events: none;
+}
+
+.arena::after {
+  content: "";
+  position: absolute;
+  inset: auto 10% -22% 10%;
+  height: 42%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.28), transparent 66%);
+  pointer-events: none;
+}
+
+.table-light {
+  position: absolute;
+  inset: -22% 18% auto;
+  height: 48%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 244, 212, 0.28), rgba(112, 216, 201, 0.1) 36%, transparent 72%);
+  filter: blur(3px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: lightBreathe 5s ease-in-out infinite;
+}
+
+.deck-stack {
+  position: absolute;
+  z-index: 2;
+  right: clamp(18px, 5vw, 68px);
+  top: 48%;
+  width: 70px;
+  height: 92px;
+  transform: rotateX(58deg) rotateZ(-10deg);
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.deck-stack span {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%) 0 0 / 14px 14px,
+    linear-gradient(135deg, transparent 75%, rgba(255, 255, 255, 0.2) 75%) 0 0 / 14px 14px,
+    linear-gradient(180deg, #31519a, #182755);
+  box-shadow: 0 16px 26px rgba(0, 0, 0, 0.28);
+}
+
+.deck-stack span:nth-child(2) {
+  transform: translate3d(4px, 4px, -4px);
+}
+
+.deck-stack span:nth-child(3) {
+  transform: translate3d(8px, 8px, -8px);
+}
+
+.action-toast {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: 49%;
+  min-width: 150px;
+  padding: 10px 16px;
+  border: 1px solid rgba(233, 188, 101, 0.44);
+  border-radius: 999px;
+  background: rgba(6, 12, 17, 0.82);
+  color: var(--ink);
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34), 0 0 28px rgba(233, 188, 101, 0.18);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.92);
+  pointer-events: none;
+}
+
+.action-toast.is-visible {
+  animation: toastPop 1250ms ease both;
 }
 
 .opponents {
@@ -205,6 +285,8 @@ h2 {
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(8, 22, 31, 0.88), rgba(5, 14, 19, 0.68));
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22);
+  transform: translateZ(18px);
+  transition: transform 180ms ease, opacity 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .seat.is-folded {
@@ -214,6 +296,7 @@ h2 {
 .seat.is-active {
   border-color: rgba(112, 216, 201, 0.58);
   box-shadow: 0 0 0 1px rgba(112, 216, 201, 0.12), 0 16px 32px rgba(0, 0, 0, 0.24);
+  transform: translateY(-2px) translateZ(24px);
 }
 
 .seat-header,
@@ -245,11 +328,13 @@ h2 {
   justify-items: center;
   min-height: 230px;
   padding: 14px;
+  transform: rotateX(6deg) translateZ(10px);
+  transform-style: preserve-3d;
 }
 
 .pot-chip {
   display: inline-grid;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto auto auto;
   align-items: center;
   gap: 8px;
   min-height: 36px;
@@ -260,6 +345,7 @@ h2 {
   background: rgba(9, 16, 18, 0.72);
   color: var(--muted);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+  transform: translateZ(34px);
 }
 
 .pot-chip span {
@@ -271,6 +357,23 @@ h2 {
 
 .pot-chip strong {
   font-size: 1.05rem;
+}
+
+.pot-chips {
+  position: relative;
+  width: 42px;
+  height: 26px;
+}
+
+.pot-chips .chip {
+  position: absolute;
+  bottom: 0;
+  width: 22px;
+  height: 8px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25) inset, 0 5px 10px rgba(0, 0, 0, 0.18);
+  animation: chipDrop 420ms ease both;
 }
 
 .cards {
@@ -291,6 +394,15 @@ h2 {
   color: var(--card-ink);
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(20, 20, 20, 0.08);
   font-weight: 950;
+  transform-style: preserve-3d;
+  animation: dealIn 420ms cubic-bezier(0.2, 0.85, 0.28, 1.2) both;
+  animation-delay: calc(var(--card-index, 0) * 58ms);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.card:hover {
+  transform: translateY(-4px) rotateX(5deg) scale(1.03);
+  box-shadow: 0 18px 28px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(20, 20, 20, 0.08);
 }
 
 .card::before {
@@ -311,6 +423,17 @@ h2 {
     linear-gradient(135deg, transparent 75%, rgba(255, 255, 255, 0.18) 75%) 0 0 / 14px 14px,
     linear-gradient(180deg, #31519a, #192b61);
   color: transparent;
+  animation-name: dealBack;
+}
+
+.board-cards .card:not(.back) {
+  animation-name: flipReveal;
+  backface-visibility: hidden;
+}
+
+.seat.is-folded .card {
+  filter: grayscale(0.8) brightness(0.72);
+  transform: rotateZ(-3deg) scale(0.95);
 }
 
 .rank {
@@ -330,6 +453,7 @@ h2 {
   display: grid;
   gap: 12px;
   justify-items: center;
+  transform: translateZ(28px);
 }
 
 .player-panel {
@@ -340,6 +464,20 @@ h2 {
 
 .player-cards .card {
   width: clamp(70px, 9vw, 96px);
+  transform-origin: 50% 82%;
+}
+
+.player-cards .card:nth-child(1) {
+  transform: rotateZ(-5deg);
+}
+
+.player-cards .card:nth-child(2) {
+  transform: rotateZ(5deg);
+}
+
+.player-cards .card:nth-child(1):hover,
+.player-cards .card:nth-child(2):hover {
+  transform: translateY(-7px) rotateZ(0deg) scale(1.04);
 }
 
 .hand-rank {
@@ -489,6 +627,149 @@ input[type="range"]::-moz-range-thumb {
   background: rgba(255, 255, 255, 0.065);
   color: #d9e7df;
   font-size: 0.86rem;
+  animation: logSlide 220ms ease both;
+}
+
+.chip-rack {
+  position: absolute;
+  z-index: 2;
+  right: 18px;
+  bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(4, 22px);
+  gap: 8px;
+  pointer-events: none;
+}
+
+.chip {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow:
+    0 8px 15px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 4px rgba(0, 0, 0, 0.16),
+    inset 0 0 0 8px rgba(255, 255, 255, 0.18);
+}
+
+.chip-gold {
+  background: var(--gold);
+}
+
+.chip-red {
+  background: var(--danger);
+}
+
+.chip-cyan {
+  background: var(--cyan);
+}
+
+.chip-blue {
+  background: var(--violet);
+}
+
+.table.is-showdown .arena {
+  box-shadow:
+    inset 0 0 0 10px rgba(255, 255, 255, 0.04),
+    inset 0 0 0 18px rgba(0, 0, 0, 0.18),
+    0 0 58px rgba(233, 188, 101, 0.18);
+}
+
+.table.is-showdown .player-panel,
+.table.is-showdown .seat:not(.is-folded) {
+  animation: winnerGlow 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes dealIn {
+  from {
+    opacity: 0;
+    transform: translate3d(78px, -78px, 120px) rotateZ(18deg) rotateY(28deg) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotateZ(0deg) rotateY(0deg) scale(1);
+  }
+}
+
+@keyframes dealBack {
+  from {
+    opacity: 0;
+    transform: translate3d(68px, -62px, 100px) rotateZ(-14deg) rotateY(18deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotateZ(0deg) rotateY(0deg) scale(1);
+  }
+}
+
+@keyframes flipReveal {
+  from {
+    opacity: 0;
+    transform: rotateY(88deg) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: rotateY(0deg) translateY(0);
+  }
+}
+
+@keyframes chipDrop {
+  from {
+    opacity: 0;
+    transform: translate3d(-18px, -24px, 0) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes toastPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.84);
+  }
+  18%,
+  76% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -54%) scale(0.96);
+  }
+}
+
+@keyframes winnerGlow {
+  from {
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22), 0 0 0 rgba(233, 188, 101, 0);
+  }
+  to {
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22), 0 0 26px rgba(233, 188, 101, 0.28);
+  }
+}
+
+@keyframes lightBreathe {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes logSlide {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @media (max-width: 900px) {
@@ -512,6 +793,7 @@ input[type="range"]::-moz-range-thumb {
   .arena {
     min-height: auto;
     padding: 12px;
+    perspective: 700px;
   }
 
   .arena::before {
@@ -534,6 +816,16 @@ input[type="range"]::-moz-range-thumb {
 
   .card {
     width: clamp(52px, 16vw, 70px);
+  }
+
+  .deck-stack {
+    display: none;
+  }
+
+  .chip-rack {
+    right: 12px;
+    bottom: 16px;
+    grid-template-columns: repeat(2, 20px);
   }
 
   .player-cards .card {
