@@ -452,8 +452,15 @@ function renderCard(card, index = 0) {
   const red = card.suit === "h" || card.suit === "d";
   return `
     <div class="card ${red ? "red" : ""}" ${delay}>
-      <span class="rank">${card.label}</span>
-      <span class="suit">${card.suitSymbol}</span>
+      <span class="card-corner top">
+        <span class="rank">${card.label}</span>
+        <span class="corner-suit">${card.suitSymbol}</span>
+      </span>
+      <span class="center-suit">${card.suitSymbol}</span>
+      <span class="card-corner bottom">
+        <span class="rank">${card.label}</span>
+        <span class="corner-suit">${card.suitSymbol}</span>
+      </span>
     </div>
   `;
 }
