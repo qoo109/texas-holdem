@@ -1,7 +1,7 @@
 // ── Audio Engine ──────────────────────────────────────────────────────────────
 const Audio = (() => {
   let ctx = null;
-  const activeNodes = new Set(); // 追踪所有活躍的音效節點
+  const activeNodes = new Set();
 
   function cleanupNode(node) {
     if (node) {
@@ -13,7 +13,6 @@ const Audio = (() => {
   function getCtx() {
     if (!ctx) {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
-      // 處理 iOS 自動暫停的問題
       const resume = () => {
         if (ctx.state === "suspended") ctx.resume();
         document.removeEventListener("touchstart", resume);
@@ -46,7 +45,6 @@ const Audio = (() => {
       osc.start(c.currentTime);
       osc.stop(c.currentTime + duration + 0.05);
 
-      // 在音效結束後清理節點
       setTimeout(() => {
         cleanupNode(osc);
         cleanupNode(gain);
@@ -68,7 +66,6 @@ const Audio = (() => {
     check() { playTone({ freq: 660, type: "triangle", vol: 0.07, duration: 0.1 }); },
     raise() { playTone({ freq: 520, type: "triangle", vol: 0.1, duration: 0.12 }); setTimeout(() => playTone({ freq: 700, type: "triangle", vol: 0.1, duration: 0.12 }), 90); },
     streetDeal() { [0, 80, 160].forEach(d => setTimeout(() => Audio.deal(), d)); },
-    // 清理所有音效（新牌局時呼叫）
     cleanup() {
       activeNodes.forEach(node => cleanupNode(node));
       activeNodes.clear();
@@ -97,7 +94,8 @@ const PERSONALITIES = [
 const state = {
   deck: [], board: [], pot: 0, currentBet: 0,
   street: "翻牌前", handOver: false, players: [], lastEvent: "新牌局開始",
-  isMuted: false, // 新增靜音狀態
+  isMuted: false,
+  autoNewHand: true, // 新增：自動新牌局開關
 };
 
 const els = {
@@ -121,7 +119,8 @@ const els = {
   raiseAmountValue: document.querySelector("#raiseAmountValue"),
   newHandButton: document.querySelector("#newHandButton"),
   gameLog: document.querySelector("#gameLog"),
-  muteButton: document.querySelector("#muteButton"), // 新增靜音按鈕
+  muteButton: document.querySelector("#muteButton"),
+  autoNewHandButton: document.querySelector("#autoNewHandButton"), // 新增
 };
 
 function createDeck() {
@@ -137,7 +136,7 @@ function shuffle(deck) {
 }
 
 function startHand() {
-  Audio.cleanup(); // 清理音效
+  Audio.cleanup();
 
   const prev = state.players.length ? state.players.map(p => Math.max(p.stack, 200)) : [1000, 1000, 1000, 1000];
   state.deck = shuffle(createDeck());
@@ -250,7 +249,6 @@ function botRound() {
     const isBluffing = Math.random() < player.bluffRate && needed <= player.stack * 0.25;
     const posBonus = player.position * 0.04;
 
-    // 改進的 AI 邏輯
     const shouldCall = eff + posBonus > potOdds - 0.05;
     const shouldRaise = (eff + posBonus > 0.68 || isBluffing) && Math.random() < player.aggression && player.stack > needed + 30;
 
@@ -297,45 +295,33 @@ function botRound() {
   }
 }
 
-// 改進的牌力評分
 function estimateStrength(player) {
   if (state.board.length >= 3) {
-    return evaluateBestHand([...player.cards, ...state.board]).score / 9; // 因為現在有 9 種牌型
+    return evaluateBestHand([...player.cards, ...state.board]).score / 9;
   }
 
   const [a, b] = [...player.cards].sort((x, y) => y.value - x.value);
   let score = 0;
 
-  // 對子
   if (a.value === b.value) {
     score = 0.5 + (a.value / 14) * 0.3;
-    // 大對子 (JJ, QQ, KK, AA)
     if (a.value >= 11) score += 0.2;
-    // 中對子 (77-10)
     else if (a.value >= 7) score += 0.1;
   }
-  // 同花
   else if (a.suit === b.suit) {
     score = 0.3 + (a.value / 14) * 0.15 + (b.value / 14) * 0.1;
-    // 同花連牌
     if (Math.abs(a.value - b.value) <= 1) score += 0.15;
-    // 同花間隔 1 (如 KQ 同花)
     else if (Math.abs(a.value - b.value) <= 2) score += 0.08;
   }
-  // 連牌
   else if (Math.abs(a.value - b.value) <= 1) {
     score = 0.25 + (a.value / 14) * 0.12;
-    // 高牌連牌 (如 AK, KQ)
     if (a.value >= 12) score += 0.1;
   }
-  // 高牌
   else {
     score = (a.value / 14) * 0.18 + (b.value / 14) * 0.1;
-    // 高牌 (A, K, Q)
     if (a.value >= 12) score += 0.08;
   }
 
-  // 同花大順的潛力 (AKQJ 同花)
   if (a.suit === b.suit && a.value >= 12 && b.value >= 11) {
     score += 0.1;
   }
@@ -420,13 +406,17 @@ function awardPot(player, message) {
   !state.isMuted && Audio.win();
   log(message);
   render();
+
+  // ✅ 自動新牌局（如果啟用且沒有人破產）
+  if (state.autoNewHand && !state.players.some(p => p.stack <= 0)) {
+    setTimeout(startHand, 3000);
+  }
 }
 
 function awardSplitPot(winners, message) {
   const share = Math.floor(state.pot / winners.length);
   const rem = state.pot % winners.length;
   winners.forEach((e, i) => {
-    // 公平分配餘數
     e.player.stack += share + (i < rem ? 1 : 0);
     e.player.wins = (e.player.wins || 0) + 1;
   });
@@ -441,6 +431,11 @@ function awardSplitPot(winners, message) {
   !state.isMuted && Audio.win();
   log(message);
   render();
+
+  // ✅ 自動新牌局（如果啟用且沒有人破產）
+  if (state.autoNewHand && !state.players.some(p => p.stack <= 0)) {
+    setTimeout(startHand, 3000);
+  }
 }
 
 function evaluateBestHand(cards) {
@@ -455,7 +450,6 @@ function evaluateFive(cards) {
   const flush = cards.every(c => c.suit === cards[0].suit);
   const sh = getStraightHigh(values);
 
-  // 同花大順 (A-K-Q-J-10 同花)
   if (flush && sh === 14) {
     const hasRoyal = values.includes(14) && values.includes(13) && values.includes(12) && values.includes(11) && values.includes(10);
     if (hasRoyal) return result(9, [14]);
@@ -480,10 +474,10 @@ function kicker(values, excluded) { return values.filter(v => !excluded.includes
 
 function getStraightHigh(values) {
   const unique = [...new Set(values)].sort((a, b) => b - a);
-  if (unique.includes(14)) unique.push(1); // A 可以當 1 用（A-2-3-4-5 順子）
+  if (unique.includes(14)) unique.push(1);
   for (let i = 0; i <= unique.length - 5; i++) {
     const run = unique.slice(i, i + 5);
-    if (run[0] - run[4] === 4) return run[0] === 1 ? 5 : run[0]; // A-2-3-4-5 算 5 高
+    if (run[0] - run[4] === 4) return run[0] === 1 ? 5 : run[0];
   }
   return 0;
 }
@@ -508,7 +502,6 @@ function combinations(items, size) {
   return output;
 }
 
-// ── Rendering ─────────────────────────────────────────────────────────────────
 function render() {
   els.table.classList.toggle("is-showdown", state.handOver);
   els.potValue.textContent = state.pot;
@@ -518,8 +511,12 @@ function render() {
   els.streetValue.textContent = state.street;
   els.playerStack.textContent = human().stack;
 
-  // 玩家手牌
-  els.playerCards.innerHTML = human().cards.map((c, i) => renderCard(c, i)).join("");
+  // ✅ 修復：手牌始終可見（加入防呆檢查）
+  const player = human();
+  const playerCards = player?.cards || [];
+  els.playerCards.innerHTML = playerCards.length === 2
+    ? playerCards.map((c, i) => renderCard(c, i)).join("")
+    : Array.from({ length: 2 }, (_, i) => renderCard(null, i)).join("");
 
   // 公共牌
   els.boardCards.innerHTML = state.board.length
@@ -580,6 +577,12 @@ function render() {
     els.muteButton.textContent = state.isMuted ? "🔊 開啟音效" : "🔇 關閉音效";
     els.muteButton.classList.toggle("is-muted", state.isMuted);
   }
+
+  // ✅ 新增：自動新牌局按鈕狀態
+  if (els.autoNewHandButton) {
+    els.autoNewHandButton.textContent = state.autoNewHand ? "⏸ 停止自動" : "▶ 自動新牌局";
+    els.autoNewHandButton.classList.toggle("is-auto-on", state.autoNewHand);
+  }
 }
 
 function renderCard(card, index = 0) {
@@ -617,7 +620,6 @@ function log(message) {
   item.className = "log-entry";
   item.textContent = message;
   els.gameLog.prepend(item);
-  // 自動滾動到最新日誌（最上面）
   els.gameLog.scrollTop = 0;
 }
 
@@ -630,10 +632,18 @@ els.raiseAmount.addEventListener("input", () => {
   els.raiseAmountValue.textContent = els.raiseAmount.value;
 });
 
-// 新增靜音按鈕事件
+// 靜音按鈕
 if (els.muteButton) {
   els.muteButton.addEventListener("click", () => {
     state.isMuted = !state.isMuted;
+    render();
+  });
+}
+
+// ✅ 新增：自動新牌局開關
+if (els.autoNewHandButton) {
+  els.autoNewHandButton.addEventListener("click", () => {
+    state.autoNewHand = !state.autoNewHand;
     render();
   });
 }
