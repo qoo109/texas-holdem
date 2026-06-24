@@ -17,6 +17,7 @@
   --hand-mid: #70d8c9;
   --hand-high: #e9bc65;
   --hand-top: #ff8c5a;
+  --card-animation-delay: 75ms;
 }
 
 * { box-sizing: border-box; }
@@ -24,7 +25,6 @@
 body {
   margin: 0;
   min-height: 100vh;
-  /* 鎖定 body 不要產生多餘的捲軸 */
   overflow: hidden;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background:
@@ -67,7 +67,6 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   grid-template-columns: minmax(0, 1fr) 300px;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 14px;
-  /* ✨ 關鍵修正 1：將 min-height 改為絕對高度 height，防止外框被撐開 */
   height: calc(100vh - 36px);
   max-height: calc(100vh - 36px);
   padding: 18px;
@@ -79,14 +78,24 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   box-shadow: 0 26px 80px rgba(0,0,0,0.46), inset 0 0 0 1px rgba(255,255,255,0.06);
 }
 
-.top-bar, .status-strip, .arena, .controls { grid-column: 1; }
-
 .top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 2px 2px 4px;
+}
+
+.top-bar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 靜音按鈕樣式 */
+#muteButton.is-muted {
+  background: rgba(255, 100, 100, 0.2) !important;
+  color: #ff786f !important;
+  border-color: rgba(255, 100, 100, 0.3) !important;
 }
 
 .eyebrow, .seat-label, .board-label {
@@ -145,7 +154,7 @@ h2 { font-size: 1.05rem; }
   display: grid;
   grid-template-rows: auto minmax(230px, 1fr) auto;
   gap: 14px;
-  min-height: 0; /* 讓內部元素可以正常伸縮 */
+  min-height: 0;
   padding: 16px;
   border: 1px solid rgba(233,188,101,0.28);
   border-radius: 16px;
@@ -156,8 +165,6 @@ h2 { font-size: 1.05rem; }
     inset 0 0 0 10px rgba(255,255,255,0.04),
     inset 0 0 0 18px rgba(0,0,0,0.18);
   overflow: hidden;
-  perspective: 980px;
-  transform-style: preserve-3d;
 }
 
 .arena::before {
@@ -198,8 +205,7 @@ h2 { font-size: 1.05rem; }
   top: 48%;
   width: 70px;
   height: 92px;
-  transform: rotateX(58deg) rotateZ(-10deg);
-  transform-style: preserve-3d;
+  transform: skewY(-8deg) skewX(4deg);
   pointer-events: none;
 }
 .deck-stack span {
@@ -214,8 +220,8 @@ h2 { font-size: 1.05rem; }
     linear-gradient(160deg, #243f90 0%, #162b63 50%, #0d183f 100%);
   box-shadow: 0 16px 26px rgba(0,0,0,0.28);
 }
-.deck-stack span:nth-child(2) { transform: translate3d(4px,4px,-4px); }
-.deck-stack span:nth-child(3) { transform: translate3d(8px,8px,-8px); }
+.deck-stack span:nth-child(2) { transform: translate(4px,4px); opacity: 0.85; }
+.deck-stack span:nth-child(3) { transform: translate(8px,8px); opacity: 0.7; }
 
 .action-toast {
   position: absolute;
@@ -253,14 +259,13 @@ h2 { font-size: 1.05rem; }
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(8,22,31,0.88), rgba(5,14,19,0.68));
   box-shadow: 0 16px 32px rgba(0,0,0,0.22);
-  transform: translateZ(18px);
   transition: transform 180ms ease, opacity 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 .seat.is-folded { opacity: 0.48; filter: grayscale(0.4); }
 .seat.is-active {
   border-color: rgba(112,216,201,0.58);
   box-shadow: 0 0 0 1px rgba(112,216,201,0.12), 0 16px 32px rgba(0,0,0,0.24);
-  transform: translateY(-2px) translateZ(24px);
+  transform: translateY(-2px);
 }
 
 .seat-header {
@@ -288,7 +293,6 @@ h2 { font-size: 1.05rem; }
   text-align: right;
 }
 
-/* Hand revealed label */
 .reveal-hand-label {
   font-size: 0.78rem;
   font-weight: 700;
@@ -309,8 +313,6 @@ h2 { font-size: 1.05rem; }
   justify-items: center;
   min-height: 230px;
   padding: 14px;
-  transform: rotateX(6deg) translateZ(10px);
-  transform-style: preserve-3d;
 }
 
 .pot-chip {
@@ -326,7 +328,6 @@ h2 { font-size: 1.05rem; }
   background: rgba(9,16,18,0.72);
   color: var(--muted);
   box-shadow: 0 12px 24px rgba(0,0,0,0.24);
-  transform: translateZ(34px);
 }
 .pot-chip span {
   color: var(--gold);
@@ -355,7 +356,6 @@ h2 { font-size: 1.05rem; }
   gap: 9px;
 }
 
-/* ── Card styles ── */
 .card {
   position: relative;
   display: block;
@@ -373,7 +373,7 @@ h2 { font-size: 1.05rem; }
     inset 0 1px 0 rgba(255,255,255,0.88),
     inset 0 -1px 0 rgba(0,0,0,0.06);
   animation: dealIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: calc(var(--card-index, 0) * 75ms);
+  animation-delay: calc(var(--card-index, 0) * var(--card-animation-delay));
 }
 
 .card.back {
@@ -437,7 +437,6 @@ h2 { font-size: 1.05rem; }
   display: grid;
   gap: 12px;
   justify-items: center;
-  transform: translateZ(28px);
 }
 
 .player-panel {
@@ -469,7 +468,7 @@ h2 { font-size: 1.05rem; }
 .hand-rank.rank-0, .hand-rank.rank-1 { color: var(--hand-low); }
 .hand-rank.rank-2, .hand-rank.rank-3 { color: var(--hand-mid); }
 .hand-rank.rank-4, .hand-rank.rank-5 { color: var(--hand-high); }
-.hand-rank.rank-6, .hand-rank.rank-7, .hand-rank.rank-8 {
+.hand-rank.rank-6, .hand-rank.rank-7, .hand-rank.rank-8, .hand-rank.rank-9 {
   color: var(--hand-top);
   font-weight: 800;
   text-shadow: 0 0 12px rgba(255,140,90,0.4);
@@ -560,25 +559,24 @@ input[type="range"]::-moz-range-thumb {
   background: #1b2730;
 }
 
-/* ── 牌局紀錄面板 CSS 修正區 ── */
 .log-panel {
   grid-column: 2;
   grid-row: 1 / span 4;
-  display: flex;             /* ✨ 關鍵修正 2：改用 Flexbox 方便管理內部縮放 */
+  display: flex;
   flex-direction: column;
-  height: 100%;              /* ✨ 關鍵修正 3：鎖定高度不超過母元素 */
-  overflow: hidden;          /* ✨ 關鍵修正 4：避免內容把面板撐破 */
+  height: 100%;
+  overflow: hidden;
   padding: 14px;
 }
 .log-panel h2 { margin-bottom: 10px; flex-shrink: 0; }
 
 .game-log {
-  overflow-y: auto;          /* ✨ 關鍵修正 5：讓內部產生垂直滾動條 */
+  overflow-y: auto;
   display: flex;
   flex-direction: column-reverse;
   gap: 8px;
-  flex: 1;                   /* ✨ 關鍵修正 6：自動填滿剩下的空間 */
-  min-height: 0;             /* ✨ 關鍵修正 7：這是讓 Flex 子元素能出現滾動條的魔法屬性 */
+  flex: 1;
+  min-height: 0;
   padding-right: 4px;
 }
 
@@ -618,7 +616,6 @@ input[type="range"]::-moz-range-thumb {
 .chip-cyan { background: var(--cyan); }
 .chip-blue { background: var(--violet); }
 
-/* Showdown state */
 .table.is-showdown .arena {
   box-shadow:
     inset 0 0 0 10px rgba(255,255,255,0.04),
@@ -630,7 +627,6 @@ input[type="range"]::-moz-range-thumb {
   animation: winnerGlow 1.4s ease-in-out infinite alternate;
 }
 
-/* ── Keyframes ── */
 @keyframes dealIn {
   from { opacity: 0; transform: translate3d(78px,-78px,120px) rotateZ(18deg) rotateY(28deg) scale(0.88); }
   to   { opacity: 1; transform: translate3d(0,0,0) rotateZ(0deg) rotateY(0deg) scale(1); }
@@ -670,21 +666,25 @@ input[type="range"]::-moz-range-thumb {
 }
 
 @media (max-width: 900px) {
-  body { overflow: auto; /* 手機版允許稍微滾動以防畫面過長 */ }
+  body { overflow: auto; }
   .app-shell { padding: 12px; height: auto; }
   .table {
     grid-template-columns: 1fr;
     height: auto;
-    max-height: none; /* 手機版解除鎖定高度 */
+    max-height: none;
     padding: 14px;
     border-radius: 14px;
   }
   .log-panel { 
     grid-column: 1; 
     grid-row: auto; 
-    max-height: 240px; /* 手機版的紀錄面板固定為最高 240px */
+    max-height: 240px;
   }
-  .arena { min-height: auto; padding: 12px; perspective: 700px; }
+  .top-bar-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .arena { min-height: auto; padding: 12px; }
   .arena::before { inset: 150px 20px 142px; }
   .opponents, .status-strip, .controls { grid-template-columns: 1fr; }
   .top-bar { align-items: flex-start; }
