@@ -1,46 +1,61 @@
+// ── Audio Engine ──────────────────────────────────────────────────────────────
+const Audio = (() => {
+  let ctx = null;
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+  function playTone({ freq = 440, type = "sine", vol = 0.18, attack = 0.01, duration = 0.18 } = {}) {
+    try {
+      const c = getCtx();
+      const osc = c.createOscillator();
+      const gain = c.createGain();
+      osc.connect(gain); gain.connect(c.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, c.currentTime);
+      gain.gain.setValueAtTime(0, c.currentTime);
+      gain.gain.linearRampToValueAtTime(vol, c.currentTime + attack);
+      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration);
+      osc.start(c.currentTime);
+      osc.stop(c.currentTime + duration + 0.05);
+    } catch {}
+  }
+  function playChord(freqs, opts = {}) {
+    freqs.forEach((freq, i) => setTimeout(() => playTone({ ...opts, freq }), i * 60));
+  }
+  return {
+    deal()      { playTone({ freq: 900, type: "triangle", vol: 0.09, attack: 0.002, duration: 0.1 }); },
+    chip()      { playTone({ freq: 1200, type: "triangle", vol: 0.08, duration: 0.06 }); setTimeout(() => playTone({ freq: 800, type: "triangle", vol: 0.05, duration: 0.05 }), 30); },
+    fold()      { playTone({ freq: 320, type: "sawtooth", vol: 0.07, attack: 0.01, duration: 0.22 }); },
+    win()       { playChord([523, 659, 784, 1047], { type: "triangle", vol: 0.12, attack: 0.01, duration: 0.45 }); },
+    check()     { playTone({ freq: 660, type: "triangle", vol: 0.07, duration: 0.1 }); },
+    raise()     { playTone({ freq: 520, type: "triangle", vol: 0.1, duration: 0.12 }); setTimeout(() => playTone({ freq: 700, type: "triangle", vol: 0.1, duration: 0.12 }), 90); },
+    streetDeal(){ [0, 80, 160].forEach(d => setTimeout(() => Audio.deal(), d)); },
+  };
+})();
+
 const suits = [
-  { key: "s", symbol: "♠" },
-  { key: "h", symbol: "♥" },
-  { key: "d", symbol: "♦" },
-  { key: "c", symbol: "♣" },
+  { key: "s", symbol: "♠" }, { key: "h", symbol: "♥" },
+  { key: "d", symbol: "♦" }, { key: "c", symbol: "♣" },
 ];
 const ranks = [
-  { label: "2", value: 2 },
-  { label: "3", value: 3 },
-  { label: "4", value: 4 },
-  { label: "5", value: 5 },
-  { label: "6", value: 6 },
-  { label: "7", value: 7 },
-  { label: "8", value: 8 },
-  { label: "9", value: 9 },
-  { label: "10", value: 10 },
-  { label: "J", value: 11 },
-  { label: "Q", value: 12 },
-  { label: "K", value: 13 },
-  { label: "A", value: 14 },
+  { label: "2", value: 2 }, { label: "3", value: 3 }, { label: "4", value: 4 },
+  { label: "5", value: 5 }, { label: "6", value: 6 }, { label: "7", value: 7 },
+  { label: "8", value: 8 }, { label: "9", value: 9 }, { label: "10", value: 10 },
+  { label: "J", value: 11 }, { label: "Q", value: 12 }, { label: "K", value: 13 }, { label: "A", value: 14 },
 ];
+const handNames = ["高牌", "一對", "兩對", "三條", "順子", "同花", "葫蘆", "四條", "同花順"];
 
-const handNames = [
-  "高牌",
-  "一對",
-  "兩對",
-  "三條",
-  "順子",
-  "同花",
-  "葫蘆",
-  "四條",
-  "同花順",
+const PERSONALITIES = [
+  { name: "Mina", emoji: "🦊", bluffRate: 0.08, aggression: 0.55 },
+  { name: "Leo",  emoji: "🦁", bluffRate: 0.22, aggression: 0.72 },
+  { name: "Rae",  emoji: "🐍", bluffRate: 0.15, aggression: 0.62 },
 ];
 
 const state = {
-  deck: [],
-  board: [],
-  pot: 0,
-  currentBet: 0,
-  street: "翻牌前",
-  handOver: false,
-  players: [],
-  lastEvent: "新牌局開始",
+  deck: [], board: [], pot: 0, currentBet: 0,
+  street: "翻牌前", handOver: false, players: [], lastEvent: "新牌局開始",
 };
 
 const els = {
@@ -67,11 +82,10 @@ const els = {
 };
 
 function createDeck() {
-  return suits.flatMap((suit) => ranks.map((rank) => ({ ...rank, suit: suit.key, suitSymbol: suit.symbol })));
+  return suits.flatMap(suit => ranks.map(rank => ({ ...rank, suit: suit.key, suitSymbol: suit.symbol })));
 }
-
 function shuffle(deck) {
-  for (let i = deck.length - 1; i > 0; i -= 1) {
+  for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
@@ -79,99 +93,73 @@ function shuffle(deck) {
 }
 
 function startHand() {
-  const previousStacks = state.players.length
-    ? state.players.map((player) => Math.max(player.stack, 200))
-    : [1000, 1000, 1000, 1000];
-
+  const prev = state.players.length ? state.players.map(p => Math.max(p.stack, 200)) : [1000, 1000, 1000, 1000];
   state.deck = shuffle(createDeck());
-  state.board = [];
-  state.pot = 0;
-  state.currentBet = 20;
-  state.street = "翻牌前";
-  state.handOver = false;
-  state.players = ["你", "Mina", "Leo", "Rae"].map((name, index) => ({
-    name,
-    isHuman: index === 0,
-    cards: [state.deck.pop(), state.deck.pop()],
-    stack: previousStacks[index],
-    bet: 0,
-    folded: false,
-    allIn: false,
-    status: index === 0 ? "等待行動" : "思考中",
-  }));
+  state.board = []; state.pot = 0; state.currentBet = 20;
+  state.street = "翻牌前"; state.handOver = false;
 
+  state.players = [
+    { name: "你", isHuman: true, emoji: "🎯", cards: [state.deck.pop(), state.deck.pop()],
+      stack: prev[0], bet: 0, folded: false, allIn: false, status: "等待行動", position: 0,
+      wins: (state.players[0]?.wins || 0) },
+    ...PERSONALITIES.map((p, i) => ({
+      ...p, isHuman: false, cards: [state.deck.pop(), state.deck.pop()],
+      stack: prev[i + 1], bet: 0, folded: false, allIn: false, status: "思考中", position: i + 1,
+      wins: (state.players[i + 1]?.wins || 0),
+    })),
+  ];
+
+  state.players.forEach((_, i) => setTimeout(() => Audio.deal(), i * 120));
   postBlind(state.players[1], 10, "小盲");
   postBlind(state.players[2], 20, "大盲");
-  log("新牌局開始，盲注 10 / 20。");
+  log("🃏 新牌局開始，盲注 10 / 20。");
   announce("新牌局開始");
   render();
 }
 
 function postBlind(player, amount, label) {
   const paid = Math.min(player.stack, amount);
-  player.stack -= paid;
-  player.bet += paid;
-  state.pot += paid;
-  player.status = `${label} ${paid}`;
+  player.stack -= paid; player.bet += paid; state.pot += paid;
+  player.status = label + " " + paid;
 }
 
-function activePlayers() {
-  return state.players.filter((player) => !player.folded);
-}
-
-function human() {
-  return state.players[0];
-}
-
-function amountToCall(player) {
-  return Math.max(0, state.currentBet - player.bet);
-}
+function activePlayers() { return state.players.filter(p => !p.folded); }
+function human() { return state.players[0]; }
+function amountToCall(player) { return Math.max(0, state.currentBet - player.bet); }
 
 function playerAction(action) {
   if (state.handOver || human().folded) return;
-
   if (action === "fold") {
-    human().folded = true;
-    human().status = "棄牌";
-    log("你棄牌。");
-    announce("你棄牌");
+    human().folded = true; human().status = "棄牌";
+    Audio.fold(); log("你棄牌。"); announce("你棄牌");
     finishByFoldIfNeeded();
   }
-
   if (action === "call") {
-    callPlayer(human(), "你跟注");
+    amountToCall(human()) === 0 ? Audio.check() : Audio.chip();
+    callPlayer(human(), "你");
   }
-
   if (action === "raise") {
     const raiseBy = Number(els.raiseAmount.value);
-    const totalBet = state.currentBet + raiseBy;
-    const contribution = Math.max(0, totalBet - human().bet);
+    const contribution = Math.max(0, (state.currentBet + raiseBy) - human().bet);
     pay(human(), contribution);
     state.currentBet = human().bet;
-    human().status = `加注到 ${state.currentBet}`;
-    log(`你加注到 ${state.currentBet}。`);
-    announce(`你加注到 ${state.currentBet}`);
+    human().status = "加注到 " + state.currentBet;
+    Audio.raise(); log("你加注到 " + state.currentBet + "。"); announce("你加注到 " + state.currentBet);
   }
-
-  if (!state.handOver) {
-    botRound();
-  }
+  if (!state.handOver) botRound();
   render();
 }
 
-function callPlayer(player, messagePrefix) {
-  const needed = amountToCall(player);
-  const paid = pay(player, needed);
-  player.status = paid === 0 ? "過牌" : `跟注 ${paid}`;
-  log(`${messagePrefix}${paid === 0 ? "，過牌。" : ` ${paid}。`}`);
-  announce(paid === 0 ? "過牌" : `跟注 ${paid}`);
+function callPlayer(player, label) {
+  const paid = pay(player, amountToCall(player));
+  player.status = paid === 0 ? "過牌" : "跟注 " + paid;
+  log(label + (paid === 0 ? "過牌。" : "跟注 " + paid + "。"));
+  announce(paid === 0 ? "過牌" : "跟注 " + paid);
 }
 
 function pay(player, amount) {
   const paid = Math.min(player.stack, amount);
-  player.stack -= paid;
-  player.bet += paid;
-  state.pot += paid;
+  player.stack -= paid; player.bet += paid; state.pot += paid;
   if (player.stack === 0) player.allIn = true;
   return paid;
 }
@@ -179,43 +167,45 @@ function pay(player, amount) {
 function botRound() {
   for (const player of state.players.slice(1)) {
     if (player.folded || player.allIn) continue;
-
     const strength = estimateStrength(player);
     const needed = amountToCall(player);
-    const pressure = needed / Math.max(1, player.stack + player.bet);
-    const random = Math.random();
+    const potOdds = needed / Math.max(1, state.pot + needed);
+    const eff = strength + (Math.random() - 0.5) * 0.1;
+    const isBluffing = Math.random() < player.bluffRate && needed <= player.stack * 0.25;
+    const posBonus = player.position * 0.04;
+    const shouldCall = eff + posBonus > potOdds - 0.05;
+    const shouldRaise = (eff + posBonus > 0.68 || isBluffing) && Math.random() < player.aggression && player.stack > needed + 30;
 
-    if (needed > 0 && strength + random * 0.28 < pressure + 0.18) {
-      player.folded = true;
-      player.status = "棄牌";
-      log(`${player.name} 棄牌。`);
-      announce(`${player.name} 棄牌`);
+    if (!shouldCall && !isBluffing) {
+      player.folded = true; player.status = "棄牌";
+      Audio.fold();
+      log(player.emoji + " " + player.name + " 棄牌。");
+      announce(player.name + " 棄牌");
       if (finishByFoldIfNeeded()) return;
       continue;
     }
-
-    if (strength > 0.72 && random > 0.42 && player.stack > needed + 30) {
-      const raiseBy = Math.min(player.stack, 30 + Math.floor(strength * 80));
+    if (shouldRaise) {
+      const raiseBy = Math.min(player.stack - needed, Math.floor(20 + (isBluffing ? 0.4 : strength) * 100));
       pay(player, needed + raiseBy);
       state.currentBet = Math.max(state.currentBet, player.bet);
-      player.status = `加注到 ${player.bet}`;
-      log(`${player.name} 加注到 ${player.bet}。`);
-      announce(`${player.name} 加注`);
+      player.status = "加注到 " + player.bet;
+      Audio.raise();
+      log(player.emoji + " " + player.name + " 加注到 " + player.bet + (isBluffing ? " 💭" : "") + "。");
+      announce(player.name + " 加注");
       continue;
     }
-
     const paid = pay(player, needed);
-    player.status = paid === 0 ? "過牌" : `跟注 ${paid}`;
-    log(`${player.name}${paid === 0 ? "過牌" : `跟注 ${paid}`}。`);
-    announce(`${player.name}${paid === 0 ? "過牌" : "跟注"}`);
+    player.status = paid === 0 ? "過牌" : "跟注 " + paid;
+    paid === 0 ? Audio.check() : Audio.chip();
+    log(player.emoji + " " + player.name + (paid === 0 ? "過牌。" : "跟注 " + paid + "。"));
+    announce(player.name + (paid === 0 ? "過牌" : "跟注"));
   }
-
   if (!finishByFoldIfNeeded()) {
     const humanCall = amountToCall(human());
     if (humanCall > 0 && !human().allIn) {
-      human().status = `需跟注 ${humanCall}`;
-      log(`行動回到你，需跟注 ${humanCall}。`);
-      announce(`輪到你：跟注 ${humanCall}`);
+      human().status = "需跟注 " + humanCall;
+      log("輪到你，需跟注 " + humanCall + "。");
+      announce("輪到你：跟注 " + humanCall);
       return;
     }
     advanceStreet();
@@ -223,188 +213,110 @@ function botRound() {
 }
 
 function estimateStrength(player) {
-  if (state.board.length >= 3) {
-    return evaluateBestHand([...player.cards, ...state.board]).score / 8;
-  }
-
+  if (state.board.length >= 3) return evaluateBestHand([...player.cards, ...state.board]).score / 8;
   const [a, b] = player.cards;
   let score = Math.max(a.value, b.value) / 14;
-  if (a.value === b.value) score += 0.35;
-  if (a.suit === b.suit) score += 0.08;
-  if (Math.abs(a.value - b.value) <= 2) score += 0.08;
+  const isPair = a.value === b.value;
+  const gap = Math.abs(a.value - b.value);
+  if (isPair) score += 0.38 + (a.value / 14) * 0.12;
+  if (a.suit === b.suit) score += 0.07;
+  if (gap === 1) score += 0.09;
+  else if (gap === 2) score += 0.05;
+  if (isPair && a.value >= 10) score += 0.15;
+  if (a.value >= 12 && b.value >= 12) score += 0.1;
   return Math.min(1, score);
 }
 
 function finishByFoldIfNeeded() {
-  const contenders = activePlayers();
-  if (contenders.length === 1) {
-    awardPot(contenders[0], `${contenders[0].name} 贏得底池 ${state.pot}。`);
-    return true;
-  }
+  const c = activePlayers();
+  if (c.length === 1) { awardPot(c[0], c[0].emoji + " " + c[0].name + " 贏得底池 " + state.pot + "！"); return true; }
   return false;
 }
 
 function advanceStreet() {
-  for (const player of state.players) {
-    player.bet = 0;
-    if (!player.folded) player.status = player.isHuman ? "等待行動" : "準備下一輪";
-  }
+  for (const p of state.players) { p.bet = 0; if (!p.folded) p.status = p.isHuman ? "等待行動" : "準備下一輪"; }
   state.currentBet = 0;
-
-  if (state.board.length === 0) {
-    state.board.push(state.deck.pop(), state.deck.pop(), state.deck.pop());
-    state.street = "翻牌";
-    log("翻牌發出。");
-    announce("翻牌發出");
-    render();
-    return;
-  }
-
-  if (state.board.length === 3) {
-    state.board.push(state.deck.pop());
-    state.street = "轉牌";
-    log("轉牌發出。");
-    announce("轉牌發出");
-    render();
-    return;
-  }
-
-  if (state.board.length === 4) {
-    state.board.push(state.deck.pop());
-    state.street = "河牌";
-    log("河牌發出。");
-    announce("河牌發出");
-    render();
-    return;
-  }
-
+  if (state.board.length === 0) { state.board.push(state.deck.pop(), state.deck.pop(), state.deck.pop()); state.street = "翻牌"; Audio.streetDeal(); log("翻牌發出。"); announce("翻牌"); render(); return; }
+  if (state.board.length === 3) { state.board.push(state.deck.pop()); state.street = "轉牌"; Audio.deal(); log("轉牌發出。"); announce("轉牌"); render(); return; }
+  if (state.board.length === 4) { state.board.push(state.deck.pop()); state.street = "河牌"; Audio.deal(); log("河牌發出。"); announce("河牌"); render(); return; }
   showdown();
 }
 
 function showdown() {
-  const contenders = activePlayers().map((player) => ({
-    player,
-    result: evaluateBestHand([...player.cards, ...state.board]),
-  }));
+  const contenders = activePlayers().map(player => ({ player, result: evaluateBestHand([...player.cards, ...state.board]) }));
   contenders.sort((a, b) => compareResults(b.result, a.result));
   const best = contenders[0];
-  const winners = contenders.filter((entry) => compareResults(entry.result, best.result) === 0);
-  if (winners.length > 1) {
-    awardSplitPot(winners, `${winners.map((entry) => entry.player.name).join("、")} 以${best.result.name}平分底池。`);
-    return;
-  }
-  awardPot(best.player, `${best.player.name} 以${best.result.name}贏得底池 ${state.pot}。`);
+  const winners = contenders.filter(e => compareResults(e.result, best.result) === 0);
+  if (winners.length > 1) { awardSplitPot(winners, winners.map(e => e.player.name).join("、") + " 以" + best.result.name + "平分底池！"); return; }
+  awardPot(best.player, best.player.emoji + " " + best.player.name + " 以" + best.result.name + "贏得底池 " + state.pot + "！");
 }
 
 function awardPot(player, message) {
-  player.stack += state.pot;
-  state.pot = 0;
-  state.handOver = true;
-  state.street = "結算";
-  for (const seat of state.players) {
-    if (!seat.folded) {
-      const result = evaluateBestHand([...seat.cards, ...state.board]);
-      seat.status = result.name;
-    }
-  }
-  log(message);
-  render();
+  player.stack += state.pot; player.wins = (player.wins || 0) + 1;
+  state.pot = 0; state.handOver = true; state.street = "結算";
+  for (const seat of state.players) if (!seat.folded) seat.status = evaluateBestHand([...seat.cards, ...state.board]).name;
+  Audio.win(); log(message); render();
 }
 
 function awardSplitPot(winners, message) {
   const share = Math.floor(state.pot / winners.length);
-  const remainder = state.pot % winners.length;
-  winners.forEach((entry, index) => {
-    entry.player.stack += share + (index === 0 ? remainder : 0);
-  });
-  state.pot = 0;
-  state.handOver = true;
-  state.street = "結算";
-  for (const seat of state.players) {
-    if (!seat.folded) {
-      const result = evaluateBestHand([...seat.cards, ...state.board]);
-      seat.status = result.name;
-    }
-  }
-  log(message);
-  render();
+  const rem = state.pot % winners.length;
+  winners.forEach((e, i) => { e.player.stack += share + (i === 0 ? rem : 0); e.player.wins = (e.player.wins || 0) + 1; });
+  state.pot = 0; state.handOver = true; state.street = "結算";
+  for (const seat of state.players) if (!seat.folded) seat.status = evaluateBestHand([...seat.cards, ...state.board]).name;
+  Audio.win(); log(message); render();
 }
 
-function evaluateBestHand(cards) {
-  const combos = combinations(cards, 5);
-  return combos.map(evaluateFive).sort(compareResults).at(-1);
-}
+function evaluateBestHand(cards) { return combinations(cards, 5).map(evaluateFive).sort(compareResults).at(-1); }
 
 function evaluateFive(cards) {
-  const values = cards.map((card) => card.value).sort((a, b) => b - a);
-  const valueCounts = new Map();
-  for (const value of values) valueCounts.set(value, (valueCounts.get(value) || 0) + 1);
-
-  const groups = [...valueCounts.entries()]
-    .map(([value, count]) => ({ value, count }))
-    .sort((a, b) => b.count - a.count || b.value - a.value);
-
-  const flush = cards.every((card) => card.suit === cards[0].suit);
-  const straightHigh = getStraightHigh(values);
-
-  if (flush && straightHigh) return result(8, [straightHigh]);
+  const values = cards.map(c => c.value).sort((a, b) => b - a);
+  const vc = new Map();
+  for (const v of values) vc.set(v, (vc.get(v) || 0) + 1);
+  const groups = [...vc.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count || b.value - a.value);
+  const flush = cards.every(c => c.suit === cards[0].suit);
+  const sh = getStraightHigh(values);
+  if (flush && sh) return result(8, [sh]);
   if (groups[0].count === 4) return result(7, [groups[0].value, kicker(values, [groups[0].value])[0]]);
   if (groups[0].count === 3 && groups[1]?.count === 2) return result(6, [groups[0].value, groups[1].value]);
   if (flush) return result(5, values);
-  if (straightHigh) return result(4, [straightHigh]);
+  if (sh) return result(4, [sh]);
   if (groups[0].count === 3) return result(3, [groups[0].value, ...kicker(values, [groups[0].value])]);
   if (groups[0].count === 2 && groups[1]?.count === 2) {
-    const pairs = groups.filter((group) => group.count === 2).map((group) => group.value).sort((a, b) => b - a);
+    const pairs = groups.filter(g => g.count === 2).map(g => g.value).sort((a, b) => b - a);
     return result(2, [...pairs, ...kicker(values, pairs)]);
   }
   if (groups[0].count === 2) return result(1, [groups[0].value, ...kicker(values, [groups[0].value])]);
   return result(0, values);
 }
 
-function result(score, tiebreakers) {
-  return { score, tiebreakers, name: handNames[score] };
-}
-
-function kicker(values, excluded) {
-  return values.filter((value) => !excluded.includes(value));
-}
-
+function result(score, tiebreakers) { return { score, tiebreakers, name: handNames[score] }; }
+function kicker(values, excluded) { return values.filter(v => !excluded.includes(v)); }
 function getStraightHigh(values) {
   const unique = [...new Set(values)].sort((a, b) => b - a);
   if (unique.includes(14)) unique.push(1);
-  for (let i = 0; i <= unique.length - 5; i += 1) {
+  for (let i = 0; i <= unique.length - 5; i++) {
     const run = unique.slice(i, i + 5);
     if (run[0] - run[4] === 4) return run[0] === 1 ? 5 : run[0];
   }
   return 0;
 }
-
 function compareResults(a, b) {
   if (a.score !== b.score) return a.score - b.score;
-  const length = Math.max(a.tiebreakers.length, b.tiebreakers.length);
-  for (let i = 0; i < length; i += 1) {
-    if ((a.tiebreakers[i] || 0) !== (b.tiebreakers[i] || 0)) {
-      return (a.tiebreakers[i] || 0) - (b.tiebreakers[i] || 0);
-    }
-  }
+  for (let i = 0; i < Math.max(a.tiebreakers.length, b.tiebreakers.length); i++)
+    if ((a.tiebreakers[i] || 0) !== (b.tiebreakers[i] || 0)) return (a.tiebreakers[i] || 0) - (b.tiebreakers[i] || 0);
   return 0;
 }
-
 function combinations(items, size) {
   const output = [];
   function walk(start, combo) {
-    if (combo.length === size) {
-      output.push(combo);
-      return;
-    }
-    for (let i = start; i < items.length; i += 1) {
-      walk(i + 1, [...combo, items[i]]);
-    }
+    if (combo.length === size) { output.push(combo); return; }
+    for (let i = start; i < items.length; i++) walk(i + 1, [...combo, items[i]]);
   }
-  walk(0, []);
-  return output;
+  walk(0, []); return output;
 }
 
+// ── Rendering ─────────────────────────────────────────────────────────────────
 function render() {
   els.table.classList.toggle("is-showdown", state.handOver);
   els.potValue.textContent = state.pot;
@@ -413,67 +325,68 @@ function render() {
   els.currentBetValue.textContent = state.currentBet;
   els.streetValue.textContent = state.street;
   els.playerStack.textContent = human().stack;
-  els.playerCards.innerHTML = human().cards.map((card, index) => renderCard(card, index)).join("");
+  els.playerCards.innerHTML = human().cards.map((c, i) => renderCard(c, i)).join("");
   els.boardCards.innerHTML = state.board.length
-    ? state.board.map((card, index) => renderCard(card, index)).join("")
-    : Array.from({ length: 5 }, (_, index) => renderCard(null, index)).join("");
-  els.playerHandRank.textContent =
-    state.board.length >= 3 ? evaluateBestHand([...human().cards, ...state.board]).name : "翻牌後會顯示目前牌型";
+    ? state.board.map((c, i) => renderCard(c, i)).join("")
+    : Array.from({ length: 5 }, (_, i) => renderCard(null, i)).join("");
 
-  els.opponents.innerHTML = state.players
-    .slice(1)
-    .map((player) => {
-      const reveal = state.handOver && !player.folded;
-      return `
-        <article class="seat ${player.folded ? "is-folded" : ""} ${player.status.includes("需") || player.status.includes("加注") ? "is-active" : ""}">
-          <div class="seat-header">
+  if (state.board.length >= 3) {
+    const best = evaluateBestHand([...human().cards, ...state.board]);
+    els.playerHandRank.textContent = best.name;
+    els.playerHandRank.className = "hand-rank rank-" + best.score;
+  } else {
+    els.playerHandRank.textContent = "翻牌後顯示牌型";
+    els.playerHandRank.className = "hand-rank";
+  }
+
+  els.opponents.innerHTML = state.players.slice(1).map(player => {
+    const reveal = state.handOver && !player.folded;
+    const handLabel = reveal && state.board.length >= 3 ? evaluateBestHand([...player.cards, ...state.board]).name : "";
+    const isActive = !player.folded && (player.status.includes("需") || player.status.includes("加注") || player.status.includes("思考"));
+    return `
+      <article class="seat ${player.folded ? "is-folded" : ""} ${isActive ? "is-active" : ""}">
+        <div class="seat-header">
+          <div class="seat-identity">
+            <span class="player-emoji">${player.emoji}</span>
             <div>
               <h2>${player.name}</h2>
               <div class="seat-meta">籌碼 ${player.stack} · 下注 ${player.bet}</div>
             </div>
-            <div class="seat-status">${player.status}</div>
           </div>
-          <div class="cards">${player.cards.map((card, index) => renderCard(reveal ? card : null, index)).join("")}</div>
-        </article>
-      `;
-    })
-    .join("");
+          <div class="seat-status">${player.status}</div>
+        </div>
+        ${handLabel ? `<div class="reveal-hand-label">${handLabel}</div>` : ""}
+        <div class="cards">${player.cards.map((c, i) => renderCard(reveal ? c : null, i)).join("")}</div>
+      </article>
+    `;
+  }).join("");
 
   const canAct = !state.handOver && !human().folded && !human().allIn;
   els.foldButton.disabled = !canAct;
   els.callButton.disabled = !canAct;
   els.raiseButton.disabled = !canAct || human().stack <= amountToCall(human()) + 10;
-  els.callButton.textContent = amountToCall(human()) ? `跟注 ${amountToCall(human())}` : "過牌";
+  els.callButton.textContent = amountToCall(human()) ? "跟注 " + amountToCall(human()) : "過牌";
+  els.raiseAmount.max = Math.max(20, human().stack - amountToCall(human()));
 }
 
 function renderCard(card, index = 0) {
   const delay = `style="--card-index: ${index}"`;
-  if (!card) return `<div class="card back" ${delay}><span class="rank">?</span></div>`;
+  if (!card) return `<div class="card back" ${delay}><div class="card-back-pattern"></div></div>`;
   const red = card.suit === "h" || card.suit === "d";
   return `
     <div class="card ${red ? "red" : ""}" ${delay}>
-      <span class="card-corner top">
-        <span class="rank">${card.label}</span>
-        <span class="corner-suit">${card.suitSymbol}</span>
-      </span>
+      <span class="card-corner top"><span class="rank">${card.label}</span><span class="corner-suit">${card.suitSymbol}</span></span>
       <span class="center-suit">${card.suitSymbol}</span>
-      <span class="card-corner bottom">
-        <span class="rank">${card.label}</span>
-        <span class="corner-suit">${card.suitSymbol}</span>
-      </span>
-    </div>
-  `;
+      <span class="card-corner bottom"><span class="rank">${card.label}</span><span class="corner-suit">${card.suitSymbol}</span></span>
+    </div>`;
 }
 
 function renderPotChips(pot) {
   const count = Math.min(10, Math.max(1, Math.ceil(pot / 70)));
   const colors = ["chip-gold", "chip-red", "chip-cyan", "chip-blue"];
-  return Array.from({ length: count }, (_, index) => {
-    const color = colors[index % colors.length];
-    const left = 3 + (index % 4) * 7;
-    const bottom = Math.floor(index / 4) * 6;
-    const delay = index * 34;
-    return `<span class="chip ${color}" style="left: ${left}px; bottom: ${bottom}px; animation-delay: ${delay}ms"></span>`;
+  return Array.from({ length: count }, (_, i) => {
+    const left = 3 + (i % 4) * 7, bottom = Math.floor(i / 4) * 6;
+    return `<span class="chip ${colors[i % colors.length]}" style="left:${left}px;bottom:${bottom}px;animation-delay:${i * 34}ms"></span>`;
   }).join("");
 }
 
@@ -497,8 +410,6 @@ els.foldButton.addEventListener("click", () => playerAction("fold"));
 els.callButton.addEventListener("click", () => playerAction("call"));
 els.raiseButton.addEventListener("click", () => playerAction("raise"));
 els.newHandButton.addEventListener("click", startHand);
-els.raiseAmount.addEventListener("input", () => {
-  els.raiseAmountValue.textContent = els.raiseAmount.value;
-});
+els.raiseAmount.addEventListener("input", () => { els.raiseAmountValue.textContent = els.raiseAmount.value; });
 
 startHand();
