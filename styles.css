@@ -33,6 +33,10 @@ body {
     linear-gradient(135deg, #070b12 0%, #101923 48%, #15110d 100%);
   color: var(--ink);
 }
+#playerCards {
+  border: 2px solid red !important; /* 如果出現紅色框，代表容器存在但內容為空 */
+  min-height: 100px;
+}
 
 button, input { font: inherit; }
 

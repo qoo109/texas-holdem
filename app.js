@@ -647,6 +647,52 @@ if (els.autoNewHandButton) {
     render();
   });
 }
+// ⚡ 緊急修復：強制顯示玩家手牌（Safari 專用）
+function forceShowPlayerCards() {
+  const player = state.players[0]; // 直接取第一個玩家
+  const container = document.getElementById('playerCards') ||
+                  document.querySelector('.player-cards');
 
+  if (!player || !container) return;
+
+  // 如果有手牌，強制渲染
+  if (player.cards && player.cards.length >= 2) {
+    container.innerHTML = player.cards.map((card, i) => {
+      const isRed = card.suit === 'h' || card.suit === 'd';
+      return `
+        <div class="card ${isRed ? 'red' : ''}"
+             style="width: 80px; height: 120px; display: block !important;
+                    opacity: 1 !important; visibility: visible !important;
+                    margin: 5px; border-radius: 10px; background: #fff8e8;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+          <div style="position: absolute; top: 5px; left: 8px; font-size: 18px; font-weight: bold; color: ${isRed ? '#c41e2e' : '#17191b'};">
+            ${card.label}
+          </div>
+          <div style="position: absolute; top: 25px; left: 8px; font-size: 24px; color: ${isRed ? '#c41e2e' : '#17191b'};">
+            ${card.suitSymbol}
+          </div>
+          <div style="position: absolute; bottom: 5px; right: 8px; font-size: 18px; font-weight: bold; color: ${isRed ? '#c41e2e' : '#17191b'}; transform: rotate(180deg);">
+            ${card.label}
+          </div>
+          <div style="position: absolute; bottom: 25px; right: 8px; font-size: 24px; color: ${isRed ? '#c41e2e' : '#17191b'}; transform: rotate(180deg);">
+            ${card.suitSymbol}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    // 如果沒有手牌，顯示背面
+    container.innerHTML = `
+      <div class="card back" style="width: 80px; height: 120px; margin: 5px; border-radius: 10px; background: linear-gradient(160deg, #243f90, #0d183f); display: block !important; opacity: 1 !important;"></div>
+      <div class="card back" style="width: 80px; height: 120px; margin: 5px; border-radius: 10px; background: linear-gradient(160deg, #243f90, #0d183f); display: block !important; opacity: 1 !important;"></div>
+    `;
+  }
+}
+
+// 每 200ms 強制檢查一次
+setInterval(forceShowPlayerCards, 200);
+
+// 頁面載入後立即執行
+setTimeout(forceShowPlayerCards, 100);
 // 頁面載入時啟動
 startHand();
