@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>德州撲克</title>
     <script>
       (() => {
@@ -14,14 +14,14 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=opponent-cards-v52" />
+    <link rel="stylesheet" href="styles.css?v=hero-total-chip-v42" />
   </head>
   <body>
     <section id="desktopOnlyNotice" class="desktop-only-notice" aria-live="polite">
       <div>
         <p>No-limit Hold'em</p>
-        <h1>請旋轉成橫向</h1>
-        <span>手機版目前支援橫向遊玩。旋轉手機後會自動進入牌桌。</span>
+        <h1>桌機版體驗限定</h1>
+        <span>目前先關閉手機版，請使用平板橫向或電腦開啟。</span>
       </div>
     </section>
     <main class="app-shell">
@@ -35,8 +35,6 @@
           <div class="top-bar-actions">
             <button id="muteButton" class="ghost-button tool-button" type="button">🔊 音效</button>
             <button id="themeButton" class="ghost-button tool-button theme-button" type="button" aria-pressed="false">☀ 明暗</button>
-            <button id="layoutButton" class="ghost-button tool-button layout-button" type="button" aria-pressed="false">🎛 編輯版面</button>
-            <button id="tutorialButton" class="ghost-button tool-button tutorial-button" type="button">📘 新手教學</button>
             <button id="autoNewHandButton" class="ghost-button auto-button" type="button">▶ 自動牌局</button>
             <button id="newHandButton" class="ghost-button" type="button">新牌局</button>
           </div>
@@ -47,35 +45,6 @@
           <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
           <div id="showdownBanner" class="showdown-banner" aria-live="polite"></div>
           <div id="actionToast" class="action-toast" aria-live="polite">新牌局開始</div>
-          <div id="layoutEditorPanel" class="layout-editor-panel" hidden>
-            <div class="layout-panel-head" data-layout-panel-handle>
-              <p class="eyebrow">Table Layout</p>
-              <strong id="layoutStatus">拖曳牌桌元素調整位置</strong>
-              <span>拖曳視窗</span>
-            </div>
-            <div class="layout-editor-actions">
-              <button id="saveLayoutButton" type="button">💾 儲存版面</button>
-              <button id="autoLayoutButton" type="button">📐 自動排列</button>
-              <button id="resetLayoutButton" type="button">↩ 還原預設</button>
-              <button id="lockLayoutButton" type="button">🔓 鎖定版面</button>
-            </div>
-            <div class="layout-nudge" aria-label="微調版面">
-              <span>微調選取元素</span>
-              <small>方向鍵微調，Shift + 方向鍵加速</small>
-              <button type="button" data-layout-nudge="up" aria-label="向上微調">↑</button>
-              <button type="button" data-layout-nudge="left" aria-label="向左微調">←</button>
-              <button type="button" data-layout-nudge="right" aria-label="向右微調">→</button>
-              <button type="button" data-layout-nudge="down" aria-label="向下微調">↓</button>
-            </div>
-          </div>
-          <div id="layoutGuides" class="layout-guides" aria-hidden="true">
-            <span class="layout-guide guide-x guide-x-25"></span>
-            <span class="layout-guide guide-x guide-x-50"></span>
-            <span class="layout-guide guide-x guide-x-75"></span>
-            <span class="layout-guide guide-y guide-y-25"></span>
-            <span class="layout-guide guide-y guide-y-50"></span>
-            <span class="layout-guide guide-y guide-y-75"></span>
-          </div>
           <div class="table-corner-stats" aria-label="牌局狀態">
             <span><em>牌局</em><strong id="cornerHandValue">第 1 局</strong></span>
             <span><em>莊家</em><strong id="cornerDealerValue">--</strong></span>
@@ -84,32 +53,33 @@
           <div id="opponents" class="opponents"></div>
 
           <section class="board-zone" aria-label="公共牌">
-            <div class="pot-chip" data-layout-key="pot" data-layout-label="💰 底池">
+            <div class="pot-chip">
               <span>Pot</span>
               <strong id="tablePotValue">0</strong>
               <em id="potDelta" class="pot-delta"></em>
               <div id="potChips" class="pot-chips" aria-hidden="true"></div>
             </div>
-            <div id="boardStageLabel" class="board-label stage-badge" data-layout-key="stage" data-layout-label="階段">PREFLOP</div>
-            <div id="boardCards" class="cards board-cards" data-layout-key="board" data-layout-label="🃏 公共牌"></div>
+            <div id="boardStageLabel" class="board-label stage-badge">PREFLOP</div>
+            <div id="boardCards" class="cards board-cards"></div>
           </section>
 
-          <section class="player-zone" aria-label="你的手牌">
+          <section class="player-zone">
             <div id="playerTurnMarker" class="turn-marker">你的回合 <span></span></div>
-            <div id="heroTableStack" class="hero-table-stack" aria-label="玩家桌面籌碼" data-layout-key="heroStack" data-layout-label="💰 玩家籌碼">
-              <span id="playerStackChips" class="mini-chip-stack hero-stack-chips" aria-hidden="true"></span>
-              <span class="hero-stack-copy">
+            <div id="heroTableStack" class="table-chip-pile table-chip-pile-hero" aria-label="玩家總籌碼">
+              <span id="playerStackChips" class="mini-chip-stack table-chip-pile-stack" aria-hidden="true"></span>
+              <span class="table-chip-pile-copy">
                 <strong id="playerStack">0</strong>
+                <span>總籌碼</span>
               </span>
             </div>
-            <div class="player-panel" data-layout-key="heroPanel" data-layout-label="玩家資訊">
+            <div class="player-panel">
               <div>
                 <p class="seat-label">你的手牌</p>
                 <h2 id="playerName">玩家</h2>
                 <p id="playerHandRank" class="hand-rank">等待發牌</p>
               </div>
             </div>
-            <div id="playerCards" class="cards player-cards" data-layout-key="heroCards" data-layout-label="玩家手牌"></div>
+            <div id="playerCards" class="cards player-cards"></div>
           </section>
 
           <div class="chip-rack" aria-hidden="true">
@@ -192,24 +162,6 @@
         </section>
       </section>
     </main>
-
-    <section id="tutorialOverlay" class="tutorial-overlay" hidden aria-modal="true" role="dialog" aria-label="德州撲克新手教學">
-      <div class="tutorial-modal">
-        <header class="tutorial-header">
-          <div>
-            <p class="eyebrow">Beginner Guide</p>
-            <h2>德州撲克新手教學</h2>
-            <span>邊看牌桌，邊理解規則、牌型、位置與下注。</span>
-          </div>
-          <button id="tutorialCloseButton" class="icon-button tutorial-close" type="button" aria-label="關閉新手教學">×</button>
-        </header>
-
-        <div class="tutorial-shell">
-          <nav id="tutorialNav" class="tutorial-nav" aria-label="教學章節"></nav>
-          <article id="tutorialContent" class="tutorial-content"></article>
-        </div>
-      </div>
-    </section>
-    <script src="app.js?v=opponent-cards-v52"></script>
+    <script src="app.js?v=hero-total-chip-v42"></script>
   </body>
 </html>

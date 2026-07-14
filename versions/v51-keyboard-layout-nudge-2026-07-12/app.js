@@ -197,12 +197,6 @@ const DEFAULT_LAYOUT = {
   seat4: { left: 60.5, top: 7 },
   seat5: { left: 79.5, top: 25.5 },
   seat6: { left: 82, top: 53 },
-  seatCards1: { left: 14, top: 63 },
-  seatCards2: { left: 16, top: 39 },
-  seatCards3: { left: 36, top: 20 },
-  seatCards4: { left: 64, top: 20 },
-  seatCards5: { left: 84, top: 39 },
-  seatCards6: { left: 84, top: 63 },
   dialogue1: { left: 22, top: 48 },
   dialogue2: { left: 19, top: 24 },
   dialogue3: { left: 33, top: 18 },
@@ -225,12 +219,6 @@ const CENTERED_LAYOUT_KEYS = new Set([
   "heroCards",
   "heroPanel",
   "heroStack",
-  "seatCards1",
-  "seatCards2",
-  "seatCards3",
-  "seatCards4",
-  "seatCards5",
-  "seatCards6",
   "dialogue1",
   "dialogue2",
   "dialogue3",
@@ -1674,12 +1662,6 @@ function render() {
     const dialogue = dialogueText
       ? `<div class="seat-dialogue dialogue-bubble dialogue-pos-${player.position} tone-${player.dialogueTone || "talk"} ${player.dialogue ? "" : "is-placeholder"}" data-layout-key="dialogue${player.position}" data-layout-label="${escapeHtml(player.emoji + " 對話")}">${escapeHtml(dialogueText)}</div>`
       : "";
-    const cards = `
-      <div class="seat-card-zone seat-cards-pos-${player.position} ${player.folded ? "is-folded" : ""} ${isWinner ? "is-winner" : ""}" data-layout-key="seatCards${player.position}" data-layout-label="${escapeHtml(player.emoji + " 手牌")}">
-        <div class="cards">${player.cards.map((c, i) => renderCard(reveal ? c : null, i, { animate: animateCards })).join("")}</div>
-        ${player.folded ? '<div class="fold-banner">FOLD</div>' : ""}
-      </div>
-    `;
     return `
       <article class="seat seat-pos-${player.position} ${player.folded ? "is-folded" : ""} ${isActive ? "is-active" : ""} ${isWinner ? "is-winner" : ""} ${actionClass}" data-layout-key="seat${player.position}" data-layout-label="${escapeHtml(player.emoji + " " + player.name)}">
         <div class="seat-header">
@@ -1701,8 +1683,9 @@ function render() {
         </div>
         ${betLabel}
         ${handLabel ? `<div class="reveal-hand-label ${isWinner ? "is-winning-hand" : ""}">${isWinner ? "勝利 · " : ""}${handLabel}</div>` : ""}
+        <div class="cards">${player.cards.map((c, i) => renderCard(reveal ? c : null, i, { animate: animateCards })).join("")}</div>
+        ${player.folded ? '<div class="fold-banner">FOLD</div>' : ""}
       </article>
-      ${cards}
       ${dialogue}
     `;
   }).join("");

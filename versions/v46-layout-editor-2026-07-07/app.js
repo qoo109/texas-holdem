@@ -188,8 +188,7 @@ const DIALOGUE_COOLDOWN_MS = 8000;
 const MAX_DIALOGUE_PER_STREET = 2;
 const CARD_MOTION_MS = 620;
 const THEME_STORAGE_KEY = "texasHoldemTheme";
-const LAYOUT_STORAGE_KEY = "texasHoldemTableLayoutV2";
-const LAYOUT_PANEL_STORAGE_KEY = "texasHoldemLayoutPanelPositionV1";
+const LAYOUT_STORAGE_KEY = "texasHoldemTableLayoutV1";
 const DEFAULT_LAYOUT = {
   seat1: { left: 4, top: 53 },
   seat2: { left: 7.2, top: 25.5 },
@@ -197,52 +196,12 @@ const DEFAULT_LAYOUT = {
   seat4: { left: 60.5, top: 7 },
   seat5: { left: 79.5, top: 25.5 },
   seat6: { left: 82, top: 53 },
-  seatCards1: { left: 14, top: 63 },
-  seatCards2: { left: 16, top: 39 },
-  seatCards3: { left: 36, top: 20 },
-  seatCards4: { left: 64, top: 20 },
-  seatCards5: { left: 84, top: 39 },
-  seatCards6: { left: 84, top: 63 },
-  dialogue1: { left: 22, top: 48 },
-  dialogue2: { left: 19, top: 24 },
-  dialogue3: { left: 33, top: 18 },
-  dialogue4: { left: 66, top: 18 },
-  dialogue5: { left: 78, top: 24 },
-  dialogue6: { left: 78, top: 48 },
   board: { left: 50, top: 53 },
   pot: { left: 50, top: 35 },
   stage: { left: 50, top: 43 },
   hero: { left: 50, top: 88 },
-  heroCards: { left: 43, top: 88 },
-  heroPanel: { left: 61, top: 88 },
-  heroStack: { left: 50, top: 77 },
 };
-const CENTERED_LAYOUT_KEYS = new Set([
-  "board",
-  "pot",
-  "stage",
-  "hero",
-  "heroCards",
-  "heroPanel",
-  "heroStack",
-  "seatCards1",
-  "seatCards2",
-  "seatCards3",
-  "seatCards4",
-  "seatCards5",
-  "seatCards6",
-  "dialogue1",
-  "dialogue2",
-  "dialogue3",
-  "dialogue4",
-  "dialogue5",
-  "dialogue6",
-]);
-const LAYOUT_SNAP_POINTS = [25, 50, 75];
-const LAYOUT_SNAP_THRESHOLD = 0.8;
-const LAYOUT_NUDGE_STEP = 0.5;
-const LAYOUT_NUDGE_FAST_STEP = 2;
-const DEFAULT_LAYOUT_PANEL = { left: null, top: 14 };
+const CENTERED_LAYOUT_KEYS = new Set(["board", "pot", "stage", "hero"]);
 const STREET_LABELS = {
   "翻牌前": "PREFLOP",
   "翻牌": "FLOP",
@@ -283,27 +242,9 @@ function normalizeLayout(layout) {
 
 function readSavedLayout() {
   try {
-    const saved = localStorage.getItem(LAYOUT_STORAGE_KEY) || localStorage.getItem("texasHoldemTableLayoutV1");
-    return normalizeLayout(JSON.parse(saved || "null"));
+    return normalizeLayout(JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY) || "null"));
   } catch (error) {
     return cloneDefaultLayout();
-  }
-}
-
-function normalizePanelPosition(position) {
-  const left = Number(position?.left);
-  const top = Number(position?.top);
-  return {
-    left: Number.isFinite(left) ? left : DEFAULT_LAYOUT_PANEL.left,
-    top: Number.isFinite(top) ? top : DEFAULT_LAYOUT_PANEL.top,
-  };
-}
-
-function readSavedPanelPosition() {
-  try {
-    return normalizePanelPosition(JSON.parse(localStorage.getItem(LAYOUT_PANEL_STORAGE_KEY) || "null"));
-  } catch (error) {
-    return normalizePanelPosition(null);
   }
 }
 
@@ -341,12 +282,6 @@ const state = {
     locked: false,
     items: readSavedLayout(),
     drag: null,
-    panel: readSavedPanelPosition(),
-    panelDrag: null,
-    selectedKey: "heroCards",
-  },
-  tutorial: {
-    activePage: "start",
   },
 };
 
@@ -390,19 +325,12 @@ const els = {
   newHandButton: document.querySelector("#newHandButton"),
   themeButton: document.querySelector("#themeButton"),
   layoutButton: document.querySelector("#layoutButton"),
-  tutorialButton: document.querySelector("#tutorialButton"),
-  tutorialOverlay: document.querySelector("#tutorialOverlay"),
-  tutorialCloseButton: document.querySelector("#tutorialCloseButton"),
-  tutorialNav: document.querySelector("#tutorialNav"),
-  tutorialContent: document.querySelector("#tutorialContent"),
   layoutEditorPanel: document.querySelector("#layoutEditorPanel"),
-  layoutPanelHandle: document.querySelector("[data-layout-panel-handle]"),
   layoutStatus: document.querySelector("#layoutStatus"),
   saveLayoutButton: document.querySelector("#saveLayoutButton"),
   autoLayoutButton: document.querySelector("#autoLayoutButton"),
   resetLayoutButton: document.querySelector("#resetLayoutButton"),
   lockLayoutButton: document.querySelector("#lockLayoutButton"),
-  layoutNudgeButtons: document.querySelectorAll("[data-layout-nudge]"),
   gameLog: document.querySelector("#gameLog"),
   muteButton: document.querySelector("#muteButton"),
   autoNewHandButton: document.querySelector("#autoNewHandButton"),
@@ -1670,16 +1598,6 @@ function render() {
     const position = positionLabel(player);
     const statusMeta = seatActionMeta(player);
     const betLabel = player.bet > 0 ? `<div class="seat-street-bet"><span>本輪</span><strong>${player.bet}</strong></div>` : "";
-    const dialogueText = player.dialogue || (state.layout.editing ? "對話" : "");
-    const dialogue = dialogueText
-      ? `<div class="seat-dialogue dialogue-bubble dialogue-pos-${player.position} tone-${player.dialogueTone || "talk"} ${player.dialogue ? "" : "is-placeholder"}" data-layout-key="dialogue${player.position}" data-layout-label="${escapeHtml(player.emoji + " 對話")}">${escapeHtml(dialogueText)}</div>`
-      : "";
-    const cards = `
-      <div class="seat-card-zone seat-cards-pos-${player.position} ${player.folded ? "is-folded" : ""} ${isWinner ? "is-winner" : ""}" data-layout-key="seatCards${player.position}" data-layout-label="${escapeHtml(player.emoji + " 手牌")}">
-        <div class="cards">${player.cards.map((c, i) => renderCard(reveal ? c : null, i, { animate: animateCards })).join("")}</div>
-        ${player.folded ? '<div class="fold-banner">FOLD</div>' : ""}
-      </div>
-    `;
     return `
       <article class="seat seat-pos-${player.position} ${player.folded ? "is-folded" : ""} ${isActive ? "is-active" : ""} ${isWinner ? "is-winner" : ""} ${actionClass}" data-layout-key="seat${player.position}" data-layout-label="${escapeHtml(player.emoji + " " + player.name)}">
         <div class="seat-header">
@@ -1700,10 +1618,11 @@ function render() {
           </div>
         </div>
         ${betLabel}
+        ${player.dialogue ? `<div class="seat-dialogue tone-${player.dialogueTone || "talk"}">${escapeHtml(player.dialogue)}</div>` : ""}
         ${handLabel ? `<div class="reveal-hand-label ${isWinner ? "is-winning-hand" : ""}">${isWinner ? "勝利 · " : ""}${handLabel}</div>` : ""}
+        <div class="cards">${player.cards.map((c, i) => renderCard(reveal ? c : null, i, { animate: animateCards })).join("")}</div>
+        ${player.folded ? '<div class="fold-banner">FOLD</div>' : ""}
       </article>
-      ${cards}
-      ${dialogue}
     `;
   }).join("");
 
@@ -1732,7 +1651,6 @@ function render() {
   }
 
   renderCoach();
-  updateLayoutEditorUI();
 }
 
 function renderCard(card, index = 0, { animate = false } = {}) {
@@ -1831,365 +1749,6 @@ function escapeHtml(text) {
   }[char]));
 }
 
-const tutorialPages = {
-  start: {
-    index: "01",
-    nav: "快速入門",
-    sub: "牌桌元素與目標",
-    title: "快速入門",
-    desc: "每位玩家拿 2 張底牌，再搭配桌面最多 5 張公共牌，從 7 張中選出最佳 5 張牌比大小。",
-    badge: "牌桌元素",
-    visual: "table",
-    items: [
-      ["底牌", "只有你自己看得到的 2 張牌，是每手牌的起點。", "你的手牌"],
-      ["公共牌", "桌面中央最多 5 張，所有玩家都能使用。", "所有人共用"],
-      ["底池", "所有下注籌碼集中在桌面中央，最後由勝利者拿走。", "POT"],
-      ["最佳 5 張", "從 2 張底牌與 5 張公共牌中選出最強的 5 張。", "不用一定拿兩張底牌"],
-      ["獲勝方式", "牌型最大，或下注讓其他玩家全部棄牌。", "不一定要攤牌"],
-      ["先保護籌碼", "新手先學會少犯錯，比每手牌都想贏更重要。", "活著才有下一局"],
-    ],
-  },
-  flow: {
-    index: "02",
-    nav: "遊戲流程",
-    sub: "五個階段",
-    title: "遊戲流程",
-    desc: "一手牌會經過翻牌前、翻牌、轉牌、河牌與攤牌。每個階段都可能有人下注、跟注、加注或棄牌。",
-    badge: "一手牌節奏",
-    visual: "flow",
-    items: [
-      ["翻牌前 Preflop", "還沒有公共牌。玩家只根據自己的 2 張底牌與位置決定是否入池。", "先看起手牌"],
-      ["翻牌 Flop", "桌上一次翻出 3 張公共牌，開始判斷成牌、聽牌與牌面危險度。", "第一個大轉折"],
-      ["轉牌 Turn", "第 4 張公共牌出現。底池通常變大，錯誤跟注會更貴。", "壓力上升"],
-      ["河牌 River", "第 5 張公共牌出現，牌型已經確定。", "最後決策"],
-      ["攤牌 Showdown", "若最後還有兩位以上玩家未棄牌，就公開手牌比大小。", "比最佳 5 張"],
-      ["任何階段都可能提前結束", "如果只剩一位玩家沒棄牌，他不用亮牌也能拿走底池。", "下注也能贏"],
-    ],
-  },
-  hands: {
-    index: "03",
-    nav: "牌型大小",
-    sub: "由大到小",
-    title: "牌型大小",
-    desc: "先比牌型等級。牌型相同時，再比牌型內的點數與踢腳牌。",
-    badge: "由大到小",
-    visual: "hands",
-    type: "hands",
-    rows: [
-      ["1", "皇家同花順", "A、K、Q、J、10 同花色連號。", ["A♠", "K♠", "Q♠", "J♠", "10♠"], "最強牌型。"],
-      ["2", "同花順", "五張同花色且連號。", ["9♥", "8♥", "7♥", "6♥", "5♥"], "只輸皇家同花順。"],
-      ["3", "四條", "四張相同點數 + 1 張其他牌。", ["K♠", "K♥", "K♦", "K♣", "8♦"], "非常強。"],
-      ["4", "葫蘆", "三張相同點數 + 一對。", ["Q♠", "Q♥", "Q♦", "7♣", "7♦"], "三條加一對。"],
-      ["5", "同花", "五張同花色，但不連號。", ["A♣", "J♣", "8♣", "6♣", "2♣"], "比順子大。"],
-      ["6", "順子", "五張連號，花色不限。", ["10♣", "9♦", "8♠", "7♥", "6♣"], "A-2-3-4-5 是最小順子。"],
-      ["7", "三條", "三張相同點數。", ["J♠", "J♥", "J♦", "5♣", "2♦"], "比兩對大。"],
-      ["8", "兩對", "兩組不同點數的一對 + 1 張其他牌。", ["10♠", "10♥", "6♣", "6♦", "3♠"], "先比最大對。"],
-      ["9", "一對", "兩張相同點數。", ["A♠", "A♦", "8♣", "7♥", "4♣"], "最常見。"],
-      ["10", "高牌", "沒有任何組合時，比最大單張。", ["K♠", "J♦", "9♣", "6♥", "2♠"], "最小牌型。"],
-    ],
-  },
-  positions: {
-    index: "04",
-    nav: "位置與盲注",
-    sub: "BTN / SB / BB",
-    title: "位置與盲注",
-    desc: "位置決定行動順序。莊家按鈕每局移動，盲注讓每一手牌開始時就有底池。",
-    badge: "6 人桌示意",
-    visual: "positions",
-    items: [
-      ["BTN 莊家位", "翻牌後通常最後行動，資訊最多，是最舒服的位置。", "後位優勢"],
-      ["SB 小盲", "莊家左邊第一位，開局先投入半個大盲。", "翻牌後較難打"],
-      ["BB 大盲", "小盲左邊，開局先投入一個大盲。", "已經投入籌碼"],
-      ["UTG 槍口位", "翻牌前第一個行動，資訊最少，通常要保守。", "前位"],
-      ["HJ / CO", "靠近莊家的後段位置，能看到更多人行動後再決定。", "可稍微放寬"],
-      ["位置會輪替", "每手牌結束後，莊家按鈕往下一位移動。", "每個人都會輪到"],
-    ],
-  },
-  betting: {
-    index: "05",
-    nav: "下注與加注",
-    sub: "操作與最小加注",
-    title: "下注與加注",
-    desc: "輪到你時，要根據目前是否有人下注，選擇過牌、下注、跟注、加注、棄牌或 All-in。",
-    badge: "操作示意",
-    visual: "betting",
-    items: [
-      ["過牌 Check", "本輪沒有人下注時，可以不投入籌碼，把行動交給下一位。", "免費看下一步"],
-      ["下注 Bet", "本輪沒有人下注時，你可以率先投入籌碼。", "主動施壓"],
-      ["跟注 Call", "投入與目前最高注額相同的籌碼，繼續留在牌局。", "付費繼續看牌"],
-      ["加注 Raise", "投入比目前最高注額更多的籌碼。", "價值下注或施壓"],
-      ["棄牌 Fold", "放棄本局，不再爭奪底池。", "保留籌碼也是策略"],
-      ["最小加注", "下一次加注至少要等於上一個加注幅度。", "避免亂加一點點"],
-    ],
-    table: [
-      ["目前有人下注 100", "你要繼續至少跟注 100"],
-      ["大盲 20，有人加注到 60", "下一次最少加注到 100"],
-      ["有人下注 100，另一人加注到 240", "下一次最少加注到 380"],
-    ],
-  },
-  allin: {
-    index: "06",
-    nav: "All-in 與邊池",
-    sub: "主池與邊池",
-    title: "All-in 與邊池",
-    desc: "All-in 是投入所有籌碼。當玩家籌碼量不同時，底池會拆成主池與邊池。",
-    badge: "池子示意",
-    visual: "allin",
-    items: [
-      ["All-in", "把自己的所有籌碼投入這手牌。", "不是每次都代表超強"],
-      ["不足額 All-in", "籌碼不夠時仍可 All-in，但可能不會重新開放加注權。", "進階規則"],
-      ["主池 Main Pot", "所有參與者都有資格爭奪的池子。", "短碼也能贏"],
-      ["邊池 Side Pot", "深籌碼玩家額外投入的部分，短碼玩家不能爭。", "深碼互打"],
-      ["分配原則", "每位玩家只能贏得與自己投入量相符的池。", "公平關鍵"],
-      ["多個邊池", "多人不同籌碼 All-in 時，可能拆出多個邊池。", "正規德州核心"],
-    ],
-    table: [
-      ["A：1,500", "可爭奪主池"],
-      ["B：4,500", "可爭奪主池 + 邊池 1"],
-      ["C：11,500", "可爭奪主池 + 邊池 1 + 邊池 2"],
-      ["D：13,500", "可爭奪主池 + 邊池 1 + 邊池 2"],
-    ],
-  },
-  terms: {
-    index: "07",
-    nav: "常見術語",
-    sub: "新手詞彙",
-    title: "常見術語",
-    desc: "先熟悉這些詞，看牌局紀錄與撲克教練時會更快進入狀況。",
-    badge: "牌桌詞彙",
-    visual: "terms",
-    items: [
-      ["Pot 底池", "本局所有玩家投入的籌碼總和。", "勝利者拿走"],
-      ["Hole Cards 底牌", "只有你自己看得到的兩張牌。", "也叫手牌"],
-      ["Board 公共牌", "桌面中央所有玩家共用的牌。", "最多五張"],
-      ["Blinds 盲注", "每局開始前強制投入的小盲與大盲。", "讓每局都有底池"],
-      ["Kicker 踢腳", "同牌型時，用來繼續比大小的輔助牌。", "常常決定勝負"],
-      ["Chop 分池", "最佳五張牌完全相同時，平分底池。", "花色不分大小"],
-    ],
-  },
-};
-
-const tutorialOrder = ["start", "flow", "hands", "positions", "betting", "allin", "terms"];
-
-function tutorialCardClass(card) {
-  return /[♥♦]/.test(card) ? " is-red" : "";
-}
-
-function tutorialMiniCards(cards) {
-  return cards.map(card => `<span class="tutorial-mini-card${tutorialCardClass(card)}">${escapeHtml(card)}</span>`).join("");
-}
-
-function tutorialRankCards(cards) {
-  return `<div class="tutorial-card-list">${cards.map(card => `<span class="tutorial-rank-card${tutorialCardClass(card)}">${escapeHtml(card)}</span>`).join("")}</div>`;
-}
-
-function tutorialTableDiagram(extra = "") {
-  return `
-    <div class="tutorial-poker-table">
-      <div class="tutorial-seat top">AI</div>
-      <div class="tutorial-seat left-top">AI</div>
-      <div class="tutorial-seat left-bottom">AI</div>
-      <div class="tutorial-seat is-player bottom">YOU</div>
-      <div class="tutorial-seat right-bottom">AI</div>
-      <div class="tutorial-seat right-top">AI</div>
-      <div class="tutorial-pot">POT <span class="tutorial-chip is-gold"></span><span class="tutorial-chip"></span><span class="tutorial-chip is-blue"></span></div>
-      <div class="tutorial-board">${tutorialMiniCards(["A♠", "K♥", "7♣", "4♦", "2♠"])}</div>
-      <div class="tutorial-hole-cards">${tutorialMiniCards(["Q♠", "Q♥"])}</div>
-      ${extra}
-    </div>`;
-}
-
-function tutorialVisual(pageKey) {
-  if (pageKey === "flow") {
-    return `
-      <div class="tutorial-visual-card">
-        <div class="tutorial-visual-title">一手牌流程</div>
-        <div class="tutorial-flow">
-          <div class="tutorial-street"><b>Preflop</b><div class="tutorial-mini-board">${tutorialMiniCards(["A♠", "K♥"])}</div><small>2 張底牌</small></div>
-          <div class="tutorial-street"><b>Flop</b><div class="tutorial-mini-board">${tutorialMiniCards(["A♠", "K♥", "7♣"])}</div><small>3 張公共牌</small></div>
-          <div class="tutorial-street"><b>Turn</b><div class="tutorial-mini-board">${tutorialMiniCards(["4♦"])}</div><small>第 4 張</small></div>
-          <div class="tutorial-street"><b>River</b><div class="tutorial-mini-board">${tutorialMiniCards(["2♠"])}</div><small>第 5 張</small></div>
-          <div class="tutorial-street"><b>Showdown</b><div class="tutorial-mini-board">${tutorialMiniCards(["Q♠", "Q♥"])}</div><small>攤牌比大小</small></div>
-        </div>
-      </div>
-      <div class="tutorial-callouts">
-        <div class="tutorial-callout"><strong>每個階段都可能下注</strong><span>有人下注後，其他玩家要選擇跟注、加注或棄牌。</span></div>
-        <div class="tutorial-callout"><strong>最後只看最佳 5 張</strong><span>從 2 張底牌與 5 張公共牌中選出最強組合。</span></div>
-      </div>`;
-  }
-
-  if (pageKey === "positions") {
-    return `
-      <div class="tutorial-visual-card">
-        <div class="tutorial-visual-title">6 人桌位置示意</div>
-        ${tutorialTableDiagram('<div class="tutorial-dealer btn">BTN</div><div class="tutorial-dealer sb">SB</div><div class="tutorial-dealer bb">BB</div>')}
-      </div>
-      <div class="tutorial-callouts">
-        <div class="tutorial-callout"><strong>BTN 莊家位</strong><span>翻牌後常常最後行動，資訊最多。</span></div>
-        <div class="tutorial-callout"><strong>SB / BB</strong><span>每局強制投入盲注，讓牌局一開始就有底池。</span></div>
-        <div class="tutorial-callout"><strong>位置輪替</strong><span>每手牌結束後，莊家按鈕往下一位移動。</span></div>
-      </div>`;
-  }
-
-  if (pageKey === "betting") {
-    return `
-      <div class="tutorial-visual-card">
-        <div class="tutorial-visual-title">操作按鈕示意</div>
-        <div class="tutorial-bet-actions">
-          <div class="tutorial-bet"><b>Check</b><span>沒人下注時過牌</span></div>
-          <div class="tutorial-bet"><b>Call</b><span>跟上目前注額</span></div>
-          <div class="tutorial-bet is-raise"><b>Raise</b><span>提高下注金額</span></div>
-          <div class="tutorial-bet is-fold"><b>Fold</b><span>放棄本局</span></div>
-          <div class="tutorial-bet is-allin"><b>All-in</b><span>投入全部籌碼</span></div>
-        </div>
-      </div>
-      <div class="tutorial-callouts">
-        <div class="tutorial-callout"><strong>沒人下注</strong><span>你通常可以 Check 或 Bet。</span></div>
-        <div class="tutorial-callout"><strong>有人下注</strong><span>你通常要 Fold、Call 或 Raise。</span></div>
-      </div>`;
-  }
-
-  if (pageKey === "allin") {
-    return `
-      <div class="tutorial-visual-card">
-        <div class="tutorial-visual-title">主池與邊池示意</div>
-        <div class="tutorial-sidepot">
-          <div class="tutorial-stack-list">
-            ${[
-              ["A", "18", "1,500"],
-              ["B", "38", "4,500"],
-              ["C", "78", "11,500"],
-              ["D", "92", "13,500"],
-            ].map(row => `<div class="tutorial-stack-row"><b>${row[0]}</b><div class="tutorial-bar"><i style="width:${row[1]}%"></i></div><span>${row[2]}</span></div>`).join("")}
-          </div>
-          <div class="tutorial-pots">
-            <div class="tutorial-pot-card"><b>主池</b><span>A/B/C/D 可爭奪</span><br><span class="tutorial-chip is-gold"></span><span class="tutorial-chip is-gold"></span><span class="tutorial-chip is-gold"></span></div>
-            <div class="tutorial-pot-card"><b>邊池 1</b><span>B/C/D 可爭奪</span><br><span class="tutorial-chip"></span><span class="tutorial-chip"></span></div>
-            <div class="tutorial-pot-card"><b>邊池 2</b><span>C/D 可爭奪</span><br><span class="tutorial-chip is-blue"></span><span class="tutorial-chip is-blue"></span></div>
-          </div>
-        </div>
-      </div>
-      <div class="tutorial-callouts">
-        <div class="tutorial-callout"><strong>短籌碼玩家</strong><span>只能爭奪自己投入金額對應的池子。</span></div>
-        <div class="tutorial-callout"><strong>深籌碼玩家</strong><span>額外投入的部分會形成邊池。</span></div>
-      </div>`;
-  }
-
-  if (pageKey === "hands") {
-    return `
-      <div class="tutorial-visual-card">
-        <div class="tutorial-visual-title">牌型示意</div>
-        <div class="tutorial-flow">
-          <div class="tutorial-street"><b>同花順</b><div class="tutorial-mini-board">${tutorialMiniCards(["9♥", "8♥", "7♥", "6♥", "5♥"])}</div><small>同花色連號</small></div>
-          <div class="tutorial-street"><b>葫蘆</b><div class="tutorial-mini-board">${tutorialMiniCards(["Q♠", "Q♥", "Q♦", "7♣", "7♦"])}</div><small>三條 + 一對</small></div>
-          <div class="tutorial-street"><b>順子</b><div class="tutorial-mini-board">${tutorialMiniCards(["10♣", "9♦", "8♠", "7♥", "6♣"])}</div><small>連號</small></div>
-          <div class="tutorial-street"><b>兩對</b><div class="tutorial-mini-board">${tutorialMiniCards(["10♠", "10♥", "6♣", "6♦"])}</div><small>兩組一對</small></div>
-          <div class="tutorial-street"><b>高牌</b><div class="tutorial-mini-board">${tutorialMiniCards(["K♠", "J♦", "9♣"])}</div><small>沒有組合</small></div>
-        </div>
-      </div>
-      <div class="tutorial-callouts">
-        <div class="tutorial-callout"><strong>先比牌型</strong><span>牌型越高越大，例如同花大於順子。</span></div>
-        <div class="tutorial-callout"><strong>同牌型再比點數</strong><span>例如同樣一對，就先比對子的大小。</span></div>
-      </div>`;
-  }
-
-  const title = pageKey === "terms" ? "牌桌名詞位置" : "牌桌構成";
-  return `
-    <div class="tutorial-visual-card">
-      <div class="tutorial-visual-title">${title}</div>
-      ${tutorialTableDiagram()}
-    </div>
-    <div class="tutorial-callouts">
-      <div class="tutorial-callout"><strong>底牌</strong><span>下方兩張是你的手牌，只有你能看到。</span></div>
-      <div class="tutorial-callout"><strong>公共牌</strong><span>桌面中央五張牌，所有玩家一起共用。</span></div>
-      <div class="tutorial-callout"><strong>底池</strong><span>下注籌碼會集中到桌面中央，勝利者拿走。</span></div>
-    </div>`;
-}
-
-function renderTutorialItems(page) {
-  if (page.type === "hands") {
-    return `<div class="tutorial-grid">${page.rows.map(row => `
-      <article class="tutorial-row">
-        <div class="tutorial-badge">${escapeHtml(row[0])}</div>
-        <div class="tutorial-row-title"><strong>${escapeHtml(row[1])}</strong><span>${escapeHtml(row[2])}</span></div>
-        ${tutorialRankCards(row[3])}
-        <div class="tutorial-note">${escapeHtml(row[4])}</div>
-      </article>`).join("")}</div>`;
-  }
-
-  return `<div class="tutorial-grid two">${page.items.map((item, index) => `
-    <article class="tutorial-info">
-      <div class="tutorial-badge">${index + 1}</div>
-      <div>
-        <h4>${escapeHtml(item[0])}</h4>
-        <p>${escapeHtml(item[1])}</p>
-        <span class="tutorial-tag">${escapeHtml(item[2])}</span>
-      </div>
-    </article>`).join("")}</div>`;
-}
-
-function renderTutorialTable(rows, title) {
-  return `
-    <div class="tutorial-tip">
-      <strong>${escapeHtml(title)}</strong>
-      <table class="tutorial-table">
-        <tbody>${rows.map(row => `<tr><td>${escapeHtml(row[0])}</td><td>${escapeHtml(row[1])}</td></tr>`).join("")}</tbody>
-      </table>
-    </div>`;
-}
-
-function renderTutorialNav() {
-  if (!els.tutorialNav) return;
-  els.tutorialNav.innerHTML = tutorialOrder.map(key => {
-    const page = tutorialPages[key];
-    return `
-      <button class="${key === state.tutorial.activePage ? "is-active" : ""}" type="button" data-tutorial-page="${key}">
-        <span class="tutorial-nav-index">${page.index}</span>
-        <span><strong>${escapeHtml(page.nav)}</strong><small>${escapeHtml(page.sub)}</small></span>
-      </button>`;
-  }).join("");
-}
-
-function renderTutorial(pageKey = state.tutorial.activePage) {
-  if (!els.tutorialContent) return;
-  const page = tutorialPages[pageKey] || tutorialPages.start;
-  state.tutorial.activePage = pageKey;
-  renderTutorialNav();
-
-  let body = renderTutorialItems(page);
-  if (page.table) {
-    body += renderTutorialTable(page.table, pageKey === "allin" ? "邊池資格範例" : "最小加注範例");
-  }
-
-  els.tutorialContent.innerHTML = `
-    <div class="tutorial-title-row">
-      <div>
-        <h3>${escapeHtml(page.title)}</h3>
-        <p>${escapeHtml(page.desc)}</p>
-      </div>
-      <div class="tutorial-pill">${escapeHtml(page.badge)}</div>
-    </div>
-    <div class="tutorial-visual-panel">${tutorialVisual(pageKey)}</div>
-    ${body}
-    <div class="tutorial-tip">入門重點：先看位置、底池與要補多少，再決定要不要繼續投入籌碼。</div>
-  `;
-}
-
-function openTutorial(pageKey = state.tutorial.activePage) {
-  if (!els.tutorialOverlay) return;
-  renderTutorial(pageKey);
-  els.tutorialOverlay.hidden = false;
-  document.body.classList.add("tutorial-open");
-  els.tutorialButton?.setAttribute("aria-pressed", "true");
-}
-
-function closeTutorial() {
-  if (!els.tutorialOverlay) return;
-  els.tutorialOverlay.hidden = true;
-  document.body.classList.remove("tutorial-open");
-  els.tutorialButton?.setAttribute("aria-pressed", "false");
-}
-
 function log(message) {
   const item = document.createElement("div");
   const className = logClass(message);
@@ -2239,10 +1798,6 @@ function layoutVarName(key, axis) {
   return `--layout-${key}-${axis}`;
 }
 
-function layoutSelectorFor(key) {
-  return `[data-layout-key="${String(key).replace(/"/g, '\\"')}"]`;
-}
-
 function applyLayoutKey(key) {
   if (!els.arena || !state.layout.items[key]) return;
   const item = state.layout.items[key];
@@ -2252,104 +1807,31 @@ function applyLayoutKey(key) {
 
 function applyLayout() {
   Object.keys(DEFAULT_LAYOUT).forEach(applyLayoutKey);
-  applyLayoutPanelPosition();
   updateLayoutEditorUI();
-}
-
-function defaultPanelPosition() {
-  if (!els.arena || !els.layoutEditorPanel) return { left: 0, top: DEFAULT_LAYOUT_PANEL.top };
-  const arenaRect = els.arena.getBoundingClientRect();
-  const panelRect = els.layoutEditorPanel.getBoundingClientRect();
-  return {
-    left: Math.max(8, arenaRect.width - panelRect.width - 16),
-    top: DEFAULT_LAYOUT_PANEL.top,
-  };
-}
-
-function panelBounds() {
-  if (!els.arena || !els.layoutEditorPanel) return { minLeft: 0, maxLeft: 0, minTop: 0, maxTop: 0 };
-  const arenaRect = els.arena.getBoundingClientRect();
-  const panelRect = els.layoutEditorPanel.getBoundingClientRect();
-  return {
-    minLeft: 8,
-    maxLeft: Math.max(8, arenaRect.width - panelRect.width - 8),
-    minTop: 8,
-    maxTop: Math.max(8, arenaRect.height - panelRect.height - 8),
-  };
-}
-
-function applyLayoutPanelPosition() {
-  if (!els.layoutEditorPanel || !els.arena) return;
-  const fallback = defaultPanelPosition();
-  const bounds = panelBounds();
-  const left = state.layout.panel.left === null ? fallback.left : state.layout.panel.left;
-  const top = state.layout.panel.top;
-  state.layout.panel = {
-    left: Number(clamp(left, bounds.minLeft, bounds.maxLeft).toFixed(1)),
-    top: Number(clamp(top, bounds.minTop, bounds.maxTop).toFixed(1)),
-  };
-  els.layoutEditorPanel.style.setProperty("--layout-panel-left", `${state.layout.panel.left}px`);
-  els.layoutEditorPanel.style.setProperty("--layout-panel-top", `${state.layout.panel.top}px`);
-}
-
-function saveLayoutPanelPosition() {
-  try {
-    localStorage.setItem(LAYOUT_PANEL_STORAGE_KEY, JSON.stringify(state.layout.panel));
-  } catch (error) {
-    console.warn("Layout panel position save failed:", error);
-  }
-}
-
-function layoutLabelFor(key) {
-  const target = els.arena?.querySelector(layoutSelectorFor(key));
-  return target?.dataset.layoutLabel || key;
-}
-
-function selectLayoutItem(key) {
-  if (!state.layout.items[key]) return;
-  state.layout.selectedKey = key;
-  updateLayoutEditorUI();
-}
-
-function snapLayoutValue(value) {
-  const snap = LAYOUT_SNAP_POINTS.find(point => Math.abs(value - point) <= LAYOUT_SNAP_THRESHOLD);
-  return snap === undefined ? value : snap;
 }
 
 function updateLayoutEditorUI() {
   if (!els.arena) return;
   els.arena.classList.toggle("layout-edit-mode", state.layout.editing);
   els.arena.classList.toggle("layout-edit-locked", state.layout.editing && state.layout.locked);
-  els.arena.querySelectorAll("[data-layout-key]").forEach(node => {
-    node.classList.toggle("is-layout-selected", node.dataset.layoutKey === state.layout.selectedKey);
-  });
 
   if (els.layoutEditorPanel) els.layoutEditorPanel.hidden = !state.layout.editing;
-  applyLayoutPanelPosition();
   if (els.layoutButton) {
     els.layoutButton.setAttribute("aria-pressed", String(state.layout.editing));
     els.layoutButton.textContent = state.layout.editing ? "✅ 完成編輯" : "🎛 編輯版面";
   }
   if (els.layoutStatus) {
-    const selectedItem = state.layout.items[state.layout.selectedKey];
-    const selectedText = selectedItem
-      ? `${layoutLabelFor(state.layout.selectedKey)} (${selectedItem.left.toFixed(1)}%, ${selectedItem.top.toFixed(1)}%)`
-      : layoutLabelFor(state.layout.selectedKey);
     els.layoutStatus.textContent = state.layout.locked
       ? "版面已鎖定，解鎖後才能拖曳。"
-      : `拖曳或微調：${selectedText}`;
+      : "拖曳牌桌元素調整位置。";
   }
   if (els.lockLayoutButton) {
     els.lockLayoutButton.textContent = state.layout.locked ? "🔒 已鎖定" : "🔓 鎖定版面";
   }
-  els.layoutNudgeButtons?.forEach(button => {
-    button.disabled = !state.layout.editing || state.layout.locked || !state.layout.selectedKey;
-  });
 }
 
 function setLayoutEditing(editing) {
   state.layout.editing = Boolean(editing);
-  render();
   updateLayoutEditorUI();
   announce(state.layout.editing ? "版面編輯模式開啟" : "版面編輯模式關閉");
 }
@@ -2357,7 +1839,6 @@ function setLayoutEditing(editing) {
 function saveLayout() {
   try {
     localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(state.layout.items));
-    saveLayoutPanelPosition();
     announce("版面已儲存");
   } catch (error) {
     announce("版面儲存失敗");
@@ -2367,10 +1848,8 @@ function saveLayout() {
 
 function resetLayout() {
   state.layout.items = cloneDefaultLayout();
-  state.layout.panel = normalizePanelPosition(null);
   try {
     localStorage.removeItem(LAYOUT_STORAGE_KEY);
-    localStorage.removeItem(LAYOUT_PANEL_STORAGE_KEY);
   } catch (error) {
     console.warn("Layout reset failed:", error);
   }
@@ -2418,100 +1897,6 @@ function layoutBoundsFor(key, target) {
   };
 }
 
-function moveLayoutItem(key, left, top, { snap = false } = {}) {
-  const target = els.arena?.querySelector(layoutSelectorFor(key));
-  if (!target || !state.layout.items[key]) return;
-  const bounds = layoutBoundsFor(key, target);
-  const nextLeft = snap ? snapLayoutValue(left) : left;
-  const nextTop = snap ? snapLayoutValue(top) : top;
-
-  state.layout.items[key] = {
-    left: Number(clamp(nextLeft, bounds.minLeft, bounds.maxLeft).toFixed(2)),
-    top: Number(clamp(nextTop, bounds.minTop, bounds.maxTop).toFixed(2)),
-  };
-
-  applyLayoutKey(key);
-  updateLayoutEditorUI();
-}
-
-function nudgeSelectedLayout(direction, { step = LAYOUT_NUDGE_STEP, announceMove = true } = {}) {
-  const key = state.layout.selectedKey;
-  if (!state.layout.editing || state.layout.locked || !state.layout.items[key]) return;
-  const item = state.layout.items[key];
-  const delta = {
-    up: [0, -step],
-    down: [0, step],
-    left: [-step, 0],
-    right: [step, 0],
-  }[direction];
-  if (!delta) return;
-  moveLayoutItem(key, item.left + delta[0], item.top + delta[1]);
-  if (announceMove) announce(`${layoutLabelFor(key)} 已微調`);
-}
-
-function handleLayoutKeyboard(event) {
-  if (!state.layout.editing || state.layout.locked) return;
-  const direction = {
-    ArrowUp: "up",
-    ArrowDown: "down",
-    ArrowLeft: "left",
-    ArrowRight: "right",
-  }[event.key];
-  if (!direction) return;
-
-  const target = event.target;
-  if (target?.closest?.("input, textarea, select, [contenteditable='true']")) return;
-
-  nudgeSelectedLayout(direction, {
-    step: event.shiftKey ? LAYOUT_NUDGE_FAST_STEP : LAYOUT_NUDGE_STEP,
-    announceMove: false,
-  });
-  event.preventDefault();
-}
-
-function beginLayoutPanelDrag(event) {
-  if (!state.layout.editing || !els.arena || !els.layoutEditorPanel) return;
-  if (event.button !== undefined && event.button !== 0) return;
-
-  const panelRect = els.layoutEditorPanel.getBoundingClientRect();
-  const arenaRect = els.arena.getBoundingClientRect();
-  state.layout.panelDrag = {
-    pointerId: event.pointerId,
-    offsetX: event.clientX - panelRect.left,
-    offsetY: event.clientY - panelRect.top,
-    arenaLeft: arenaRect.left,
-    arenaTop: arenaRect.top,
-  };
-
-  els.layoutEditorPanel.classList.add("is-panel-dragging");
-  els.layoutPanelHandle?.setPointerCapture?.(event.pointerId);
-  event.stopPropagation();
-  event.preventDefault();
-}
-
-function moveLayoutPanelDrag(event) {
-  const drag = state.layout.panelDrag;
-  if (!drag || drag.pointerId !== event.pointerId) return;
-  const bounds = panelBounds();
-  state.layout.panel = {
-    left: Number(clamp(event.clientX - drag.arenaLeft - drag.offsetX, bounds.minLeft, bounds.maxLeft).toFixed(1)),
-    top: Number(clamp(event.clientY - drag.arenaTop - drag.offsetY, bounds.minTop, bounds.maxTop).toFixed(1)),
-  };
-  applyLayoutPanelPosition();
-  event.stopPropagation();
-  event.preventDefault();
-}
-
-function endLayoutPanelDrag(event) {
-  const drag = state.layout.panelDrag;
-  if (!drag || drag.pointerId !== event.pointerId) return;
-  els.layoutEditorPanel?.classList.remove("is-panel-dragging");
-  els.layoutPanelHandle?.releasePointerCapture?.(event.pointerId);
-  state.layout.panelDrag = null;
-  saveLayoutPanelPosition();
-  event.stopPropagation();
-}
-
 function beginLayoutDrag(event) {
   if (!state.layout.editing || state.layout.locked || !els.arena) return;
   if (event.button !== undefined && event.button !== 0) return;
@@ -2521,7 +1906,6 @@ function beginLayoutDrag(event) {
 
   const key = target.dataset.layoutKey;
   if (!state.layout.items[key]) return;
-  selectLayoutItem(key);
 
   const rect = target.getBoundingClientRect();
   const centered = CENTERED_LAYOUT_KEYS.has(key);
@@ -2537,7 +1921,6 @@ function beginLayoutDrag(event) {
   };
 
   target.classList.add("is-layout-dragging");
-  els.arena.classList.add("layout-edit-dragging");
   target.setPointerCapture?.(event.pointerId);
   event.preventDefault();
 }
@@ -2549,10 +1932,16 @@ function moveLayoutDrag(event) {
   const arenaRect = els.arena.getBoundingClientRect();
   if (!arenaRect.width || !arenaRect.height) return;
 
+  const bounds = layoutBoundsFor(drag.key, drag.target);
   const left = ((event.clientX - arenaRect.left - drag.offsetX) / arenaRect.width) * 100;
   const top = ((event.clientY - arenaRect.top - drag.offsetY) / arenaRect.height) * 100;
 
-  moveLayoutItem(drag.key, left, top, { snap: true });
+  state.layout.items[drag.key] = {
+    left: Number(clamp(left, bounds.minLeft, bounds.maxLeft).toFixed(2)),
+    top: Number(clamp(top, bounds.minTop, bounds.maxTop).toFixed(2)),
+  };
+
+  applyLayoutKey(drag.key);
   event.preventDefault();
 }
 
@@ -2563,7 +1952,6 @@ function endLayoutDrag(event) {
   drag.target.classList.remove("is-layout-dragging");
   drag.target.releasePointerCapture?.(event.pointerId);
   state.layout.drag = null;
-  els.arena?.classList.remove("layout-edit-dragging");
 }
 
 els.foldButton.addEventListener("click", () => playerAction("fold"));
@@ -2608,53 +1996,10 @@ if (els.layoutButton) {
   });
 }
 
-if (els.tutorialButton) {
-  els.tutorialButton.addEventListener("click", () => {
-    openTutorial();
-  });
-}
-
-if (els.tutorialCloseButton) {
-  els.tutorialCloseButton.addEventListener("click", closeTutorial);
-}
-
-if (els.tutorialOverlay) {
-  els.tutorialOverlay.addEventListener("click", event => {
-    if (event.target === els.tutorialOverlay) closeTutorial();
-  });
-}
-
-if (els.tutorialNav) {
-  els.tutorialNav.addEventListener("click", event => {
-    const button = event.target.closest("button[data-tutorial-page]");
-    if (!button) return;
-    renderTutorial(button.dataset.tutorialPage);
-  });
-}
-
-document.addEventListener("keydown", event => {
-  handleLayoutKeyboard(event);
-  if (event.key === "Escape" && els.tutorialOverlay && !els.tutorialOverlay.hidden) {
-    closeTutorial();
-  }
-});
-
 if (els.saveLayoutButton) els.saveLayoutButton.addEventListener("click", saveLayout);
 if (els.autoLayoutButton) els.autoLayoutButton.addEventListener("click", autoArrangeLayout);
 if (els.resetLayoutButton) els.resetLayoutButton.addEventListener("click", resetLayout);
 if (els.lockLayoutButton) els.lockLayoutButton.addEventListener("click", toggleLayoutLock);
-els.layoutNudgeButtons?.forEach(button => {
-  button.addEventListener("click", () => nudgeSelectedLayout(button.dataset.layoutNudge));
-});
-if (els.layoutPanelHandle) {
-  els.layoutPanelHandle.addEventListener("pointerdown", beginLayoutPanelDrag);
-  els.layoutPanelHandle.addEventListener("pointermove", moveLayoutPanelDrag);
-  els.layoutPanelHandle.addEventListener("pointerup", endLayoutPanelDrag);
-  els.layoutPanelHandle.addEventListener("pointercancel", endLayoutPanelDrag);
-  window.addEventListener("pointermove", moveLayoutPanelDrag);
-  window.addEventListener("pointerup", endLayoutPanelDrag);
-  window.addEventListener("pointercancel", endLayoutPanelDrag);
-}
 
 if (els.arena) {
   els.arena.addEventListener("pointerdown", beginLayoutDrag);
@@ -2675,7 +2020,7 @@ function syncCoachSettings() {
   if (input) input.addEventListener("change", syncCoachSettings);
 });
 
-const desktopOnlyMedia = window.matchMedia("(max-width: 900px) and (orientation: portrait)");
+const desktopOnlyMedia = window.matchMedia("(max-width: 900px)");
 
 function applyDesktopOnlyMode() {
   const blocked = desktopOnlyMedia.matches;

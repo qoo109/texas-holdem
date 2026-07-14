@@ -649,42 +649,6 @@ h2 { font-size: 1.05rem; }
 .seat-pos-4 { left: var(--layout-seat4-left, 60.5%); top: var(--layout-seat4-top, 7%); }
 .seat-pos-5 { left: var(--layout-seat5-left, 79.5%); top: var(--layout-seat5-top, 25.5%); }
 .seat-pos-6 { left: var(--layout-seat6-left, 82%); top: var(--layout-seat6-top, 53%); }
-.seat-card-zone {
-  position: absolute;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  min-width: 86px;
-  min-height: 56px;
-  pointer-events: auto;
-  transform: translate(-50%, -50%);
-}
-.seat-cards-pos-1 { left: var(--layout-seatCards1-left, 14%); top: var(--layout-seatCards1-top, 63%); }
-.seat-cards-pos-2 { left: var(--layout-seatCards2-left, 16%); top: var(--layout-seatCards2-top, 39%); }
-.seat-cards-pos-3 { left: var(--layout-seatCards3-left, 36%); top: var(--layout-seatCards3-top, 20%); }
-.seat-cards-pos-4 { left: var(--layout-seatCards4-left, 64%); top: var(--layout-seatCards4-top, 20%); }
-.seat-cards-pos-5 { left: var(--layout-seatCards5-left, 84%); top: var(--layout-seatCards5-top, 39%); }
-.seat-cards-pos-6 { left: var(--layout-seatCards6-left, 84%); top: var(--layout-seatCards6-top, 63%); }
-.seat-card-zone.is-folded {
-  opacity: 0.7;
-  filter: grayscale(0.28);
-}
-.seat-card-zone.is-winner {
-  filter: drop-shadow(0 0 20px rgba(233,188,101,0.28));
-}
-.seat-card-zone .cards {
-  gap: 4px;
-}
-.seat-card-zone .card {
-  width: 38px;
-  border-radius: 6px;
-}
-.seat-card-zone .rank {
-  font-size: 0.58rem;
-}
-.seat-card-zone .corner-suit {
-  font-size: 0.46rem;
-}
 .seat.is-folded { opacity: 0.48; filter: grayscale(0.4); }
 .seat.is-active {
   filter: drop-shadow(0 14px 24px rgba(0,0,0,0.26)) drop-shadow(0 0 18px rgba(112,216,201,0.3));
@@ -1302,32 +1266,6 @@ h2 { font-size: 1.05rem; }
 }
 .seat .corner-suit {
   font-size: 0.46rem;
-}
-.seat-card-zone .pip-layout {
-  inset: 18% 20%;
-}
-.seat-card-zone .pip {
-  font-size: 0.5rem;
-}
-.seat-card-zone .rank-8 .pip,
-.seat-card-zone .rank-9 .pip,
-.seat-card-zone .rank-10 .pip {
-  font-size: 0.42rem;
-}
-.seat-card-zone .ace-emblem span {
-  font-size: 1.2rem;
-}
-.seat-card-zone .face-rank {
-  font-size: 0.98rem;
-}
-.seat-card-zone .face-suit {
-  margin-top: -3px;
-  font-size: 0.68rem;
-}
-.seat-card-zone .fold-banner {
-  inset: auto 3px 6px;
-  min-height: 28px;
-  font-size: 0.8rem;
 }
 
 .card.back {
@@ -4124,18 +4062,6 @@ body.is-desktop-only-blocked .desktop-only-notice {
   .seat-pos-5 { left: 80% !important; top: 21% !important; }
   .seat-pos-6 { left: 82% !important; top: 48% !important; }
 
-  .seat-card-zone {
-    min-width: 66px;
-    min-height: 42px;
-  }
-
-  .seat-cards-pos-1 { left: 10% !important; top: 62% !important; }
-  .seat-cards-pos-2 { left: 13% !important; top: 37% !important; }
-  .seat-cards-pos-3 { left: 36% !important; top: 22% !important; }
-  .seat-cards-pos-4 { left: 64% !important; top: 22% !important; }
-  .seat-cards-pos-5 { left: 87% !important; top: 37% !important; }
-  .seat-cards-pos-6 { left: 87% !important; top: 62% !important; }
-
   .seat-header {
     width: 108px;
     inline-size: 108px;
@@ -4198,16 +4124,16 @@ body.is-desktop-only-blocked .desktop-only-notice {
     font-size: 0.54rem;
   }
 
-  .seat-card-zone .card {
+  .seat .card {
     width: 28px;
     border-radius: 5px;
   }
 
-  .seat-card-zone .cards {
+  .seat .cards {
     gap: 3px;
   }
 
-  .seat-card-zone .fold-banner {
+  .fold-banner {
     inset: auto 8px 6px;
     min-height: 24px;
     font-size: 0.72rem;

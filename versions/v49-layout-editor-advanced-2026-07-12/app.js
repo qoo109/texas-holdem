@@ -189,7 +189,6 @@ const MAX_DIALOGUE_PER_STREET = 2;
 const CARD_MOTION_MS = 620;
 const THEME_STORAGE_KEY = "texasHoldemTheme";
 const LAYOUT_STORAGE_KEY = "texasHoldemTableLayoutV2";
-const LAYOUT_PANEL_STORAGE_KEY = "texasHoldemLayoutPanelPositionV1";
 const DEFAULT_LAYOUT = {
   seat1: { left: 4, top: 53 },
   seat2: { left: 7.2, top: 25.5 },
@@ -197,12 +196,6 @@ const DEFAULT_LAYOUT = {
   seat4: { left: 60.5, top: 7 },
   seat5: { left: 79.5, top: 25.5 },
   seat6: { left: 82, top: 53 },
-  seatCards1: { left: 14, top: 63 },
-  seatCards2: { left: 16, top: 39 },
-  seatCards3: { left: 36, top: 20 },
-  seatCards4: { left: 64, top: 20 },
-  seatCards5: { left: 84, top: 39 },
-  seatCards6: { left: 84, top: 63 },
   dialogue1: { left: 22, top: 48 },
   dialogue2: { left: 19, top: 24 },
   dialogue3: { left: 33, top: 18 },
@@ -225,12 +218,6 @@ const CENTERED_LAYOUT_KEYS = new Set([
   "heroCards",
   "heroPanel",
   "heroStack",
-  "seatCards1",
-  "seatCards2",
-  "seatCards3",
-  "seatCards4",
-  "seatCards5",
-  "seatCards6",
   "dialogue1",
   "dialogue2",
   "dialogue3",
@@ -241,8 +228,6 @@ const CENTERED_LAYOUT_KEYS = new Set([
 const LAYOUT_SNAP_POINTS = [25, 50, 75];
 const LAYOUT_SNAP_THRESHOLD = 0.8;
 const LAYOUT_NUDGE_STEP = 0.5;
-const LAYOUT_NUDGE_FAST_STEP = 2;
-const DEFAULT_LAYOUT_PANEL = { left: null, top: 14 };
 const STREET_LABELS = {
   "翻牌前": "PREFLOP",
   "翻牌": "FLOP",
@@ -290,23 +275,6 @@ function readSavedLayout() {
   }
 }
 
-function normalizePanelPosition(position) {
-  const left = Number(position?.left);
-  const top = Number(position?.top);
-  return {
-    left: Number.isFinite(left) ? left : DEFAULT_LAYOUT_PANEL.left,
-    top: Number.isFinite(top) ? top : DEFAULT_LAYOUT_PANEL.top,
-  };
-}
-
-function readSavedPanelPosition() {
-  try {
-    return normalizePanelPosition(JSON.parse(localStorage.getItem(LAYOUT_PANEL_STORAGE_KEY) || "null"));
-  } catch (error) {
-    return normalizePanelPosition(null);
-  }
-}
-
 const state = {
   deck: [], board: [], pot: 0, currentBet: 0,
   street: "翻牌前", handOver: false, players: [], lastEvent: "新牌局開始",
@@ -341,8 +309,6 @@ const state = {
     locked: false,
     items: readSavedLayout(),
     drag: null,
-    panel: readSavedPanelPosition(),
-    panelDrag: null,
     selectedKey: "heroCards",
   },
   tutorial: {
@@ -396,7 +362,6 @@ const els = {
   tutorialNav: document.querySelector("#tutorialNav"),
   tutorialContent: document.querySelector("#tutorialContent"),
   layoutEditorPanel: document.querySelector("#layoutEditorPanel"),
-  layoutPanelHandle: document.querySelector("[data-layout-panel-handle]"),
   layoutStatus: document.querySelector("#layoutStatus"),
   saveLayoutButton: document.querySelector("#saveLayoutButton"),
   autoLayoutButton: document.querySelector("#autoLayoutButton"),
@@ -1674,12 +1639,6 @@ function render() {
     const dialogue = dialogueText
       ? `<div class="seat-dialogue dialogue-bubble dialogue-pos-${player.position} tone-${player.dialogueTone || "talk"} ${player.dialogue ? "" : "is-placeholder"}" data-layout-key="dialogue${player.position}" data-layout-label="${escapeHtml(player.emoji + " 對話")}">${escapeHtml(dialogueText)}</div>`
       : "";
-    const cards = `
-      <div class="seat-card-zone seat-cards-pos-${player.position} ${player.folded ? "is-folded" : ""} ${isWinner ? "is-winner" : ""}" data-layout-key="seatCards${player.position}" data-layout-label="${escapeHtml(player.emoji + " 手牌")}">
-        <div class="cards">${player.cards.map((c, i) => renderCard(reveal ? c : null, i, { animate: animateCards })).join("")}</div>
-        ${player.folded ? '<div class="fold-banner">FOLD</div>' : ""}
-      </div>
-    `;
     return `
       <article class="seat seat-pos-${player.position} ${player.folded ? "is-folded" : ""} ${isActive ? "is-active" : ""} ${isWinner ? "is-winner" : ""} ${actionClass}" data-layout-key="seat${player.position}" data-layout-label="${escapeHtml(player.emoji + " " + player.name)}">
         <div class="seat-header">
@@ -1701,8 +1660,9 @@ function render() {
         </div>
         ${betLabel}
         ${handLabel ? `<div class="reveal-hand-label ${isWinner ? "is-winning-hand" : ""}">${isWinner ? "勝利 · " : ""}${handLabel}</div>` : ""}
+        <div class="cards">${player.cards.map((c, i) => renderCard(reveal ? c : null, i, { animate: animateCards })).join("")}</div>
+        ${player.folded ? '<div class="fold-banner">FOLD</div>' : ""}
       </article>
-      ${cards}
       ${dialogue}
     `;
   }).join("");
@@ -2252,52 +2212,7 @@ function applyLayoutKey(key) {
 
 function applyLayout() {
   Object.keys(DEFAULT_LAYOUT).forEach(applyLayoutKey);
-  applyLayoutPanelPosition();
   updateLayoutEditorUI();
-}
-
-function defaultPanelPosition() {
-  if (!els.arena || !els.layoutEditorPanel) return { left: 0, top: DEFAULT_LAYOUT_PANEL.top };
-  const arenaRect = els.arena.getBoundingClientRect();
-  const panelRect = els.layoutEditorPanel.getBoundingClientRect();
-  return {
-    left: Math.max(8, arenaRect.width - panelRect.width - 16),
-    top: DEFAULT_LAYOUT_PANEL.top,
-  };
-}
-
-function panelBounds() {
-  if (!els.arena || !els.layoutEditorPanel) return { minLeft: 0, maxLeft: 0, minTop: 0, maxTop: 0 };
-  const arenaRect = els.arena.getBoundingClientRect();
-  const panelRect = els.layoutEditorPanel.getBoundingClientRect();
-  return {
-    minLeft: 8,
-    maxLeft: Math.max(8, arenaRect.width - panelRect.width - 8),
-    minTop: 8,
-    maxTop: Math.max(8, arenaRect.height - panelRect.height - 8),
-  };
-}
-
-function applyLayoutPanelPosition() {
-  if (!els.layoutEditorPanel || !els.arena) return;
-  const fallback = defaultPanelPosition();
-  const bounds = panelBounds();
-  const left = state.layout.panel.left === null ? fallback.left : state.layout.panel.left;
-  const top = state.layout.panel.top;
-  state.layout.panel = {
-    left: Number(clamp(left, bounds.minLeft, bounds.maxLeft).toFixed(1)),
-    top: Number(clamp(top, bounds.minTop, bounds.maxTop).toFixed(1)),
-  };
-  els.layoutEditorPanel.style.setProperty("--layout-panel-left", `${state.layout.panel.left}px`);
-  els.layoutEditorPanel.style.setProperty("--layout-panel-top", `${state.layout.panel.top}px`);
-}
-
-function saveLayoutPanelPosition() {
-  try {
-    localStorage.setItem(LAYOUT_PANEL_STORAGE_KEY, JSON.stringify(state.layout.panel));
-  } catch (error) {
-    console.warn("Layout panel position save failed:", error);
-  }
 }
 
 function layoutLabelFor(key) {
@@ -2325,19 +2240,14 @@ function updateLayoutEditorUI() {
   });
 
   if (els.layoutEditorPanel) els.layoutEditorPanel.hidden = !state.layout.editing;
-  applyLayoutPanelPosition();
   if (els.layoutButton) {
     els.layoutButton.setAttribute("aria-pressed", String(state.layout.editing));
     els.layoutButton.textContent = state.layout.editing ? "✅ 完成編輯" : "🎛 編輯版面";
   }
   if (els.layoutStatus) {
-    const selectedItem = state.layout.items[state.layout.selectedKey];
-    const selectedText = selectedItem
-      ? `${layoutLabelFor(state.layout.selectedKey)} (${selectedItem.left.toFixed(1)}%, ${selectedItem.top.toFixed(1)}%)`
-      : layoutLabelFor(state.layout.selectedKey);
     els.layoutStatus.textContent = state.layout.locked
       ? "版面已鎖定，解鎖後才能拖曳。"
-      : `拖曳或微調：${selectedText}`;
+      : `拖曳或微調：${layoutLabelFor(state.layout.selectedKey)}`;
   }
   if (els.lockLayoutButton) {
     els.lockLayoutButton.textContent = state.layout.locked ? "🔒 已鎖定" : "🔓 鎖定版面";
@@ -2357,7 +2267,6 @@ function setLayoutEditing(editing) {
 function saveLayout() {
   try {
     localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(state.layout.items));
-    saveLayoutPanelPosition();
     announce("版面已儲存");
   } catch (error) {
     announce("版面儲存失敗");
@@ -2367,10 +2276,8 @@ function saveLayout() {
 
 function resetLayout() {
   state.layout.items = cloneDefaultLayout();
-  state.layout.panel = normalizePanelPosition(null);
   try {
     localStorage.removeItem(LAYOUT_STORAGE_KEY);
-    localStorage.removeItem(LAYOUT_PANEL_STORAGE_KEY);
   } catch (error) {
     console.warn("Layout reset failed:", error);
   }
@@ -2434,82 +2341,19 @@ function moveLayoutItem(key, left, top, { snap = false } = {}) {
   updateLayoutEditorUI();
 }
 
-function nudgeSelectedLayout(direction, { step = LAYOUT_NUDGE_STEP, announceMove = true } = {}) {
+function nudgeSelectedLayout(direction) {
   const key = state.layout.selectedKey;
   if (!state.layout.editing || state.layout.locked || !state.layout.items[key]) return;
   const item = state.layout.items[key];
   const delta = {
-    up: [0, -step],
-    down: [0, step],
-    left: [-step, 0],
-    right: [step, 0],
+    up: [0, -LAYOUT_NUDGE_STEP],
+    down: [0, LAYOUT_NUDGE_STEP],
+    left: [-LAYOUT_NUDGE_STEP, 0],
+    right: [LAYOUT_NUDGE_STEP, 0],
   }[direction];
   if (!delta) return;
   moveLayoutItem(key, item.left + delta[0], item.top + delta[1]);
-  if (announceMove) announce(`${layoutLabelFor(key)} 已微調`);
-}
-
-function handleLayoutKeyboard(event) {
-  if (!state.layout.editing || state.layout.locked) return;
-  const direction = {
-    ArrowUp: "up",
-    ArrowDown: "down",
-    ArrowLeft: "left",
-    ArrowRight: "right",
-  }[event.key];
-  if (!direction) return;
-
-  const target = event.target;
-  if (target?.closest?.("input, textarea, select, [contenteditable='true']")) return;
-
-  nudgeSelectedLayout(direction, {
-    step: event.shiftKey ? LAYOUT_NUDGE_FAST_STEP : LAYOUT_NUDGE_STEP,
-    announceMove: false,
-  });
-  event.preventDefault();
-}
-
-function beginLayoutPanelDrag(event) {
-  if (!state.layout.editing || !els.arena || !els.layoutEditorPanel) return;
-  if (event.button !== undefined && event.button !== 0) return;
-
-  const panelRect = els.layoutEditorPanel.getBoundingClientRect();
-  const arenaRect = els.arena.getBoundingClientRect();
-  state.layout.panelDrag = {
-    pointerId: event.pointerId,
-    offsetX: event.clientX - panelRect.left,
-    offsetY: event.clientY - panelRect.top,
-    arenaLeft: arenaRect.left,
-    arenaTop: arenaRect.top,
-  };
-
-  els.layoutEditorPanel.classList.add("is-panel-dragging");
-  els.layoutPanelHandle?.setPointerCapture?.(event.pointerId);
-  event.stopPropagation();
-  event.preventDefault();
-}
-
-function moveLayoutPanelDrag(event) {
-  const drag = state.layout.panelDrag;
-  if (!drag || drag.pointerId !== event.pointerId) return;
-  const bounds = panelBounds();
-  state.layout.panel = {
-    left: Number(clamp(event.clientX - drag.arenaLeft - drag.offsetX, bounds.minLeft, bounds.maxLeft).toFixed(1)),
-    top: Number(clamp(event.clientY - drag.arenaTop - drag.offsetY, bounds.minTop, bounds.maxTop).toFixed(1)),
-  };
-  applyLayoutPanelPosition();
-  event.stopPropagation();
-  event.preventDefault();
-}
-
-function endLayoutPanelDrag(event) {
-  const drag = state.layout.panelDrag;
-  if (!drag || drag.pointerId !== event.pointerId) return;
-  els.layoutEditorPanel?.classList.remove("is-panel-dragging");
-  els.layoutPanelHandle?.releasePointerCapture?.(event.pointerId);
-  state.layout.panelDrag = null;
-  saveLayoutPanelPosition();
-  event.stopPropagation();
+  announce(`${layoutLabelFor(key)} 已微調`);
 }
 
 function beginLayoutDrag(event) {
@@ -2633,7 +2477,6 @@ if (els.tutorialNav) {
 }
 
 document.addEventListener("keydown", event => {
-  handleLayoutKeyboard(event);
   if (event.key === "Escape" && els.tutorialOverlay && !els.tutorialOverlay.hidden) {
     closeTutorial();
   }
@@ -2646,15 +2489,6 @@ if (els.lockLayoutButton) els.lockLayoutButton.addEventListener("click", toggleL
 els.layoutNudgeButtons?.forEach(button => {
   button.addEventListener("click", () => nudgeSelectedLayout(button.dataset.layoutNudge));
 });
-if (els.layoutPanelHandle) {
-  els.layoutPanelHandle.addEventListener("pointerdown", beginLayoutPanelDrag);
-  els.layoutPanelHandle.addEventListener("pointermove", moveLayoutPanelDrag);
-  els.layoutPanelHandle.addEventListener("pointerup", endLayoutPanelDrag);
-  els.layoutPanelHandle.addEventListener("pointercancel", endLayoutPanelDrag);
-  window.addEventListener("pointermove", moveLayoutPanelDrag);
-  window.addEventListener("pointerup", endLayoutPanelDrag);
-  window.addEventListener("pointercancel", endLayoutPanelDrag);
-}
 
 if (els.arena) {
   els.arena.addEventListener("pointerdown", beginLayoutDrag);

@@ -14,7 +14,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=opponent-cards-v52" />
+    <link rel="stylesheet" href="styles.css?v=layout-editor-v49" />
   </head>
   <body>
     <section id="desktopOnlyNotice" class="desktop-only-notice" aria-live="polite">
@@ -48,10 +48,9 @@
           <div id="showdownBanner" class="showdown-banner" aria-live="polite"></div>
           <div id="actionToast" class="action-toast" aria-live="polite">新牌局開始</div>
           <div id="layoutEditorPanel" class="layout-editor-panel" hidden>
-            <div class="layout-panel-head" data-layout-panel-handle>
+            <div>
               <p class="eyebrow">Table Layout</p>
               <strong id="layoutStatus">拖曳牌桌元素調整位置</strong>
-              <span>拖曳視窗</span>
             </div>
             <div class="layout-editor-actions">
               <button id="saveLayoutButton" type="button">💾 儲存版面</button>
@@ -61,7 +60,6 @@
             </div>
             <div class="layout-nudge" aria-label="微調版面">
               <span>微調選取元素</span>
-              <small>方向鍵微調，Shift + 方向鍵加速</small>
               <button type="button" data-layout-nudge="up" aria-label="向上微調">↑</button>
               <button type="button" data-layout-nudge="left" aria-label="向左微調">←</button>
               <button type="button" data-layout-nudge="right" aria-label="向右微調">→</button>
@@ -210,6 +208,6 @@
         </div>
       </div>
     </section>
-    <script src="app.js?v=opponent-cards-v52"></script>
+    <script src="app.js?v=layout-editor-v49"></script>
   </body>
 </html>
