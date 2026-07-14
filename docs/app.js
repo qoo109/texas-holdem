@@ -190,6 +190,7 @@ const CARD_MOTION_MS = 620;
 const THEME_STORAGE_KEY = "texasHoldemTheme";
 const LAYOUT_STORAGE_KEY = "texasHoldemTableLayoutV2";
 const LAYOUT_PANEL_STORAGE_KEY = "texasHoldemLayoutPanelPositionV1";
+const LAYOUT_ARROW_STORAGE_KEY = "texasHoldemDialogueArrowsV1";
 const DEFAULT_LAYOUT = {
   seat1: { left: 4, top: 53 },
   seat2: { left: 7.2, top: 25.5 },
@@ -217,6 +218,15 @@ const DEFAULT_LAYOUT = {
   heroPanel: { left: 61, top: 88 },
   heroStack: { left: 50, top: 77 },
 };
+const DEFAULT_DIALOGUE_ARROWS = {
+  dialogue1: "left",
+  dialogue2: "left",
+  dialogue3: "up",
+  dialogue4: "up",
+  dialogue5: "right",
+  dialogue6: "right",
+};
+const DIALOGUE_ARROW_DIRECTIONS = new Set(["up", "down", "left", "right"]);
 const CENTERED_LAYOUT_KEYS = new Set([
   "board",
   "pot",
@@ -281,12 +291,35 @@ function normalizeLayout(layout) {
   return normalized;
 }
 
+function cloneDefaultDialogueArrows() {
+  return { ...DEFAULT_DIALOGUE_ARROWS };
+}
+
+function normalizeDialogueArrows(arrows) {
+  const normalized = cloneDefaultDialogueArrows();
+  if (!arrows || typeof arrows !== "object") return normalized;
+
+  Object.keys(DEFAULT_DIALOGUE_ARROWS).forEach(key => {
+    if (DIALOGUE_ARROW_DIRECTIONS.has(arrows[key])) normalized[key] = arrows[key];
+  });
+
+  return normalized;
+}
+
 function readSavedLayout() {
   try {
     const saved = localStorage.getItem(LAYOUT_STORAGE_KEY) || localStorage.getItem("texasHoldemTableLayoutV1");
     return normalizeLayout(JSON.parse(saved || "null"));
   } catch (error) {
     return cloneDefaultLayout();
+  }
+}
+
+function readSavedDialogueArrows() {
+  try {
+    return normalizeDialogueArrows(JSON.parse(localStorage.getItem(LAYOUT_ARROW_STORAGE_KEY) || "null"));
+  } catch (error) {
+    return cloneDefaultDialogueArrows();
   }
 }
 
@@ -340,6 +373,7 @@ const state = {
     editing: false,
     locked: false,
     items: readSavedLayout(),
+    arrows: readSavedDialogueArrows(),
     drag: null,
     panel: readSavedPanelPosition(),
     panelDrag: null,
@@ -403,6 +437,8 @@ const els = {
   resetLayoutButton: document.querySelector("#resetLayoutButton"),
   lockLayoutButton: document.querySelector("#lockLayoutButton"),
   layoutNudgeButtons: document.querySelectorAll("[data-layout-nudge]"),
+  dialogueArrowControls: document.querySelector("#dialogueArrowControls"),
+  dialogueArrowButtons: document.querySelectorAll("[data-dialogue-arrow]"),
   gameLog: document.querySelector("#gameLog"),
   muteButton: document.querySelector("#muteButton"),
   autoNewHandButton: document.querySelector("#autoNewHandButton"),
@@ -1671,8 +1707,10 @@ function render() {
     const statusMeta = seatActionMeta(player);
     const betLabel = player.bet > 0 ? `<div class="seat-street-bet"><span>本輪</span><strong>${player.bet}</strong></div>` : "";
     const dialogueText = player.dialogue || (state.layout.editing ? "對話" : "");
+    const dialogueKey = `dialogue${player.position}`;
+    const dialogueArrow = state.layout.arrows[dialogueKey] || DEFAULT_DIALOGUE_ARROWS[dialogueKey] || "down";
     const dialogue = dialogueText
-      ? `<div class="seat-dialogue dialogue-bubble dialogue-pos-${player.position} tone-${player.dialogueTone || "talk"} ${player.dialogue ? "" : "is-placeholder"}" data-layout-key="dialogue${player.position}" data-layout-label="${escapeHtml(player.emoji + " 對話")}">${escapeHtml(dialogueText)}</div>`
+      ? `<div class="seat-dialogue dialogue-bubble dialogue-pos-${player.position} tone-${player.dialogueTone || "talk"} ${player.dialogue ? "" : "is-placeholder"}" data-layout-key="${dialogueKey}" data-layout-label="${escapeHtml(player.emoji + " 對話")}" data-arrow="${dialogueArrow}">${escapeHtml(dialogueText)}</div>`
       : "";
     const cards = `
       <div class="seat-card-zone seat-cards-pos-${player.position} ${player.folded ? "is-folded" : ""} ${isWinner ? "is-winner" : ""}" data-layout-key="seatCards${player.position}" data-layout-label="${escapeHtml(player.emoji + " 手牌")}">
@@ -1837,14 +1875,14 @@ const tutorialPages = {
     nav: "快速入門",
     sub: "牌桌元素與目標",
     title: "快速入門",
-    desc: "每位玩家拿 2 張底牌，再搭配桌面最多 5 張公共牌，從 7 張中選出最佳 5 張牌比大小。",
+    desc: "你有 2 張底牌，桌上最多 5 張公共牌；最後比較最強的 5 張牌。",
     badge: "牌桌元素",
     visual: "table",
     items: [
-      ["底牌", "只有你自己看得到的 2 張牌，是每手牌的起點。", "你的手牌"],
-      ["公共牌", "桌面中央最多 5 張，所有玩家都能使用。", "所有人共用"],
-      ["底池", "所有下注籌碼集中在桌面中央，最後由勝利者拿走。", "POT"],
-      ["最佳 5 張", "從 2 張底牌與 5 張公共牌中選出最強的 5 張。", "不用一定拿兩張底牌"],
+      ["底牌", "只有你看得到的 2 張牌。", "你的手牌"],
+      ["公共牌", "桌面中央的牌，大家都能使用。", "所有人共用"],
+      ["底池", "大家下注的籌碼會集中在這裡。", "贏家拿走"],
+      ["最佳 5 張", "從可用的牌中選出最強 5 張。", "不用全用底牌"],
       ["獲勝方式", "牌型最大，或下注讓其他玩家全部棄牌。", "不一定要攤牌"],
       ["先保護籌碼", "新手先學會少犯錯，比每手牌都想贏更重要。", "活著才有下一局"],
     ],
@@ -1854,14 +1892,14 @@ const tutorialPages = {
     nav: "遊戲流程",
     sub: "五個階段",
     title: "遊戲流程",
-    desc: "一手牌會經過翻牌前、翻牌、轉牌、河牌與攤牌。每個階段都可能有人下注、跟注、加注或棄牌。",
+    desc: "一手牌有 5 個階段；每個階段都可能有人下注或棄牌。",
     badge: "一手牌節奏",
     visual: "flow",
     items: [
-      ["翻牌前 Preflop", "還沒有公共牌。玩家只根據自己的 2 張底牌與位置決定是否入池。", "先看起手牌"],
-      ["翻牌 Flop", "桌上一次翻出 3 張公共牌，開始判斷成牌、聽牌與牌面危險度。", "第一個大轉折"],
-      ["轉牌 Turn", "第 4 張公共牌出現。底池通常變大，錯誤跟注會更貴。", "壓力上升"],
-      ["河牌 River", "第 5 張公共牌出現，牌型已經確定。", "最後決策"],
+      ["翻牌前", "還沒有公共牌，先看自己的 2 張底牌。", "Preflop"],
+      ["翻牌", "一次發出 3 張公共牌。", "Flop"],
+      ["轉牌", "發出第 4 張公共牌。", "Turn"],
+      ["河牌", "發出最後一張公共牌。", "River"],
       ["攤牌 Showdown", "若最後還有兩位以上玩家未棄牌，就公開手牌比大小。", "比最佳 5 張"],
       ["任何階段都可能提前結束", "如果只剩一位玩家沒棄牌，他不用亮牌也能拿走底池。", "下注也能贏"],
     ],
@@ -1871,7 +1909,7 @@ const tutorialPages = {
     nav: "牌型大小",
     sub: "由大到小",
     title: "牌型大小",
-    desc: "先比牌型等級。牌型相同時，再比牌型內的點數與踢腳牌。",
+    desc: "先比牌型；牌型相同，再比點數與踢腳牌。",
     badge: "由大到小",
     visual: "hands",
     type: "hands",
@@ -1893,14 +1931,14 @@ const tutorialPages = {
     nav: "位置與盲注",
     sub: "BTN / SB / BB",
     title: "位置與盲注",
-    desc: "位置決定行動順序。莊家按鈕每局移動，盲注讓每一手牌開始時就有底池。",
+    desc: "位置決定誰先行動；SB 與 BB 會在開局前先放入盲注。",
     badge: "6 人桌示意",
     visual: "positions",
     items: [
-      ["BTN 莊家位", "翻牌後通常最後行動，資訊最多，是最舒服的位置。", "後位優勢"],
-      ["SB 小盲", "莊家左邊第一位，開局先投入半個大盲。", "翻牌後較難打"],
-      ["BB 大盲", "小盲左邊，開局先投入一個大盲。", "已經投入籌碼"],
-      ["UTG 槍口位", "翻牌前第一個行動，資訊最少，通常要保守。", "前位"],
+      ["BTN 莊家", "翻牌後通常較晚行動，資訊最多。", "位置最好"],
+      ["SB 小盲", "開局先放入半個大盲。", "強制下注"],
+      ["BB 大盲", "開局先放入一個大盲。", "強制下注"],
+      ["UTG 槍口位", "翻牌前最早行動，資訊最少。", "要更保守"],
       ["HJ / CO", "靠近莊家的後段位置，能看到更多人行動後再決定。", "可稍微放寬"],
       ["位置會輪替", "每手牌結束後，莊家按鈕往下一位移動。", "每個人都會輪到"],
     ],
@@ -1910,14 +1948,14 @@ const tutorialPages = {
     nav: "下注與加注",
     sub: "操作與最小加注",
     title: "下注與加注",
-    desc: "輪到你時，要根據目前是否有人下注，選擇過牌、下注、跟注、加注、棄牌或 All-in。",
+    desc: "先看有沒有人下注，再選擇過牌、跟注、加注、棄牌或 All-in。",
     badge: "操作示意",
     visual: "betting",
     items: [
-      ["過牌 Check", "本輪沒有人下注時，可以不投入籌碼，把行動交給下一位。", "免費看下一步"],
-      ["下注 Bet", "本輪沒有人下注時，你可以率先投入籌碼。", "主動施壓"],
-      ["跟注 Call", "投入與目前最高注額相同的籌碼，繼續留在牌局。", "付費繼續看牌"],
-      ["加注 Raise", "投入比目前最高注額更多的籌碼。", "價值下注或施壓"],
+      ["過牌 Check", "沒人下注時，不花籌碼把行動交出去。", "免費繼續"],
+      ["跟注 Call", "補到目前最高注額，繼續玩。", "跟上注額"],
+      ["加注 Raise", "把目前最高注額再提高。", "增加壓力"],
+      ["棄牌 Fold", "放棄這一手，保留剩下籌碼。", "停止損失"],
       ["棄牌 Fold", "放棄本局，不再爭奪底池。", "保留籌碼也是策略"],
       ["最小加注", "下一次加注至少要等於上一個加注幅度。", "避免亂加一點點"],
     ],
@@ -1932,14 +1970,14 @@ const tutorialPages = {
     nav: "All-in 與邊池",
     sub: "主池與邊池",
     title: "All-in 與邊池",
-    desc: "All-in 是投入所有籌碼。當玩家籌碼量不同時，底池會拆成主池與邊池。",
+    desc: "All-in 是投入全部籌碼；投入金額不同時，底池會拆成主池與邊池。",
     badge: "池子示意",
     visual: "allin",
     items: [
-      ["All-in", "把自己的所有籌碼投入這手牌。", "不是每次都代表超強"],
-      ["不足額 All-in", "籌碼不夠時仍可 All-in，但可能不會重新開放加注權。", "進階規則"],
-      ["主池 Main Pot", "所有參與者都有資格爭奪的池子。", "短碼也能贏"],
-      ["邊池 Side Pot", "深籌碼玩家額外投入的部分，短碼玩家不能爭。", "深碼互打"],
+      ["All-in", "把剩下的籌碼全部投入。", "全押"],
+      ["主池", "所有有投入的玩家都能爭奪。", "Main Pot"],
+      ["邊池", "只有額外投入的玩家能爭奪。", "Side Pot"],
+      ["公平原則", "只能贏自己有投入的池子。", "投入多少爭多少"],
       ["分配原則", "每位玩家只能贏得與自己投入量相符的池。", "公平關鍵"],
       ["多個邊池", "多人不同籌碼 All-in 時，可能拆出多個邊池。", "正規德州核心"],
     ],
@@ -1955,14 +1993,14 @@ const tutorialPages = {
     nav: "常見術語",
     sub: "新手詞彙",
     title: "常見術語",
-    desc: "先熟悉這些詞，看牌局紀錄與撲克教練時會更快進入狀況。",
+    desc: "先記住最常見的牌桌用語，讀牌局紀錄會更容易。",
     badge: "牌桌詞彙",
     visual: "terms",
     items: [
-      ["Pot 底池", "本局所有玩家投入的籌碼總和。", "勝利者拿走"],
-      ["Hole Cards 底牌", "只有你自己看得到的兩張牌。", "也叫手牌"],
-      ["Board 公共牌", "桌面中央所有玩家共用的牌。", "最多五張"],
-      ["Blinds 盲注", "每局開始前強制投入的小盲與大盲。", "讓每局都有底池"],
+      ["Pot 底池", "大家在這一手投入的籌碼。", "贏家拿走"],
+      ["Hole Cards 底牌", "只有你看得到的兩張牌。", "你的手牌"],
+      ["Board 公共牌", "桌面中央所有人共用的牌。", "最多五張"],
+      ["Blinds 盲注", "開局前由 SB、BB 強制投入。", "讓牌局開始"],
       ["Kicker 踢腳", "同牌型時，用來繼續比大小的輔助牌。", "常常決定勝負"],
       ["Chop 分池", "最佳五張牌完全相同時，平分底池。", "花色不分大小"],
     ],
@@ -2005,16 +2043,16 @@ function tutorialVisual(pageKey) {
       <div class="tutorial-visual-card">
         <div class="tutorial-visual-title">一手牌流程</div>
         <div class="tutorial-flow">
-          <div class="tutorial-street"><b>Preflop</b><div class="tutorial-mini-board">${tutorialMiniCards(["A♠", "K♥"])}</div><small>2 張底牌</small></div>
-          <div class="tutorial-street"><b>Flop</b><div class="tutorial-mini-board">${tutorialMiniCards(["A♠", "K♥", "7♣"])}</div><small>3 張公共牌</small></div>
-          <div class="tutorial-street"><b>Turn</b><div class="tutorial-mini-board">${tutorialMiniCards(["4♦"])}</div><small>第 4 張</small></div>
-          <div class="tutorial-street"><b>River</b><div class="tutorial-mini-board">${tutorialMiniCards(["2♠"])}</div><small>第 5 張</small></div>
-          <div class="tutorial-street"><b>Showdown</b><div class="tutorial-mini-board">${tutorialMiniCards(["Q♠", "Q♥"])}</div><small>攤牌比大小</small></div>
+          <div class="tutorial-street"><b>翻牌前</b><div class="tutorial-mini-board">${tutorialMiniCards(["A♠", "K♥"])}</div><small>先看底牌</small></div>
+          <div class="tutorial-street"><b>翻牌</b><div class="tutorial-mini-board">${tutorialMiniCards(["A♠", "K♥", "7♣"])}</div><small>發 3 張</small></div>
+          <div class="tutorial-street"><b>轉牌</b><div class="tutorial-mini-board">${tutorialMiniCards(["4♦"])}</div><small>第 4 張</small></div>
+          <div class="tutorial-street"><b>河牌</b><div class="tutorial-mini-board">${tutorialMiniCards(["2♠"])}</div><small>第 5 張</small></div>
+          <div class="tutorial-street"><b>攤牌</b><div class="tutorial-mini-board">${tutorialMiniCards(["Q♠", "Q♥"])}</div><small>比大小</small></div>
         </div>
       </div>
       <div class="tutorial-callouts">
-        <div class="tutorial-callout"><strong>每個階段都可能下注</strong><span>有人下注後，其他玩家要選擇跟注、加注或棄牌。</span></div>
-        <div class="tutorial-callout"><strong>最後只看最佳 5 張</strong><span>從 2 張底牌與 5 張公共牌中選出最強組合。</span></div>
+        <div class="tutorial-callout"><strong>每階段都能行動</strong><span>你可以過牌、跟注、加注或棄牌。</span></div>
+        <div class="tutorial-callout"><strong>最後比 5 張</strong><span>從能使用的牌中選出最強 5 張。</span></div>
       </div>`;
   }
 
@@ -2025,9 +2063,8 @@ function tutorialVisual(pageKey) {
         ${tutorialTableDiagram('<div class="tutorial-dealer btn">BTN</div><div class="tutorial-dealer sb">SB</div><div class="tutorial-dealer bb">BB</div>')}
       </div>
       <div class="tutorial-callouts">
-        <div class="tutorial-callout"><strong>BTN 莊家位</strong><span>翻牌後常常最後行動，資訊最多。</span></div>
-        <div class="tutorial-callout"><strong>SB / BB</strong><span>每局強制投入盲注，讓牌局一開始就有底池。</span></div>
-        <div class="tutorial-callout"><strong>位置輪替</strong><span>每手牌結束後，莊家按鈕往下一位移動。</span></div>
+        <div class="tutorial-callout"><strong>BTN 最有資訊</strong><span>翻牌後通常較晚行動。</span></div>
+        <div class="tutorial-callout"><strong>SB / BB 先付盲注</strong><span>莊家位置每局往下一位移動。</span></div>
       </div>`;
   }
 
@@ -2036,16 +2073,16 @@ function tutorialVisual(pageKey) {
       <div class="tutorial-visual-card">
         <div class="tutorial-visual-title">操作按鈕示意</div>
         <div class="tutorial-bet-actions">
-          <div class="tutorial-bet"><b>Check</b><span>沒人下注時過牌</span></div>
-          <div class="tutorial-bet"><b>Call</b><span>跟上目前注額</span></div>
-          <div class="tutorial-bet is-raise"><b>Raise</b><span>提高下注金額</span></div>
-          <div class="tutorial-bet is-fold"><b>Fold</b><span>放棄本局</span></div>
+          <div class="tutorial-bet"><b>過牌</b><span>不下注，換下一位</span></div>
+          <div class="tutorial-bet"><b>跟注</b><span>補到目前注額</span></div>
+          <div class="tutorial-bet is-raise"><b>加注</b><span>把目前注額提高</span></div>
+          <div class="tutorial-bet is-fold"><b>棄牌</b><span>放棄這一手</span></div>
           <div class="tutorial-bet is-allin"><b>All-in</b><span>投入全部籌碼</span></div>
         </div>
       </div>
       <div class="tutorial-callouts">
-        <div class="tutorial-callout"><strong>沒人下注</strong><span>你通常可以 Check 或 Bet。</span></div>
-        <div class="tutorial-callout"><strong>有人下注</strong><span>你通常要 Fold、Call 或 Raise。</span></div>
+        <div class="tutorial-callout"><strong>沒人下注</strong><span>可以過牌，或主動下注。</span></div>
+        <div class="tutorial-callout"><strong>已經有人下注</strong><span>選擇跟注、加注或棄牌。</span></div>
       </div>`;
   }
 
@@ -2063,33 +2100,37 @@ function tutorialVisual(pageKey) {
             ].map(row => `<div class="tutorial-stack-row"><b>${row[0]}</b><div class="tutorial-bar"><i style="width:${row[1]}%"></i></div><span>${row[2]}</span></div>`).join("")}
           </div>
           <div class="tutorial-pots">
-            <div class="tutorial-pot-card"><b>主池</b><span>A/B/C/D 可爭奪</span><br><span class="tutorial-chip is-gold"></span><span class="tutorial-chip is-gold"></span><span class="tutorial-chip is-gold"></span></div>
-            <div class="tutorial-pot-card"><b>邊池 1</b><span>B/C/D 可爭奪</span><br><span class="tutorial-chip"></span><span class="tutorial-chip"></span></div>
-            <div class="tutorial-pot-card"><b>邊池 2</b><span>C/D 可爭奪</span><br><span class="tutorial-chip is-blue"></span><span class="tutorial-chip is-blue"></span></div>
+            <div class="tutorial-pot-card"><div><b>主池</b><span>A、B、C、D 都能贏</span></div><div class="tutorial-pot-chips"><span class="tutorial-chip is-gold"></span><span class="tutorial-chip is-gold"></span><span class="tutorial-chip is-gold"></span></div></div>
+            <div class="tutorial-pot-card"><div><b>邊池 1</b><span>只有 B、C、D 能贏</span></div><div class="tutorial-pot-chips"><span class="tutorial-chip"></span><span class="tutorial-chip"></span></div></div>
+            <div class="tutorial-pot-card"><div><b>邊池 2</b><span>只有 C、D 能贏</span></div><div class="tutorial-pot-chips"><span class="tutorial-chip is-blue"></span><span class="tutorial-chip is-blue"></span></div></div>
           </div>
         </div>
       </div>
       <div class="tutorial-callouts">
-        <div class="tutorial-callout"><strong>短籌碼玩家</strong><span>只能爭奪自己投入金額對應的池子。</span></div>
-        <div class="tutorial-callout"><strong>深籌碼玩家</strong><span>額外投入的部分會形成邊池。</span></div>
+        <div class="tutorial-callout"><strong>短籌碼玩家</strong><span>只能贏自己有投入的池子。</span></div>
+        <div class="tutorial-callout"><strong>多出的下注</strong><span>深籌碼多投的部分會進邊池。</span></div>
       </div>`;
   }
 
   if (pageKey === "hands") {
     return `
-      <div class="tutorial-visual-card">
-        <div class="tutorial-visual-title">牌型示意</div>
-        <div class="tutorial-flow">
-          <div class="tutorial-street"><b>同花順</b><div class="tutorial-mini-board">${tutorialMiniCards(["9♥", "8♥", "7♥", "6♥", "5♥"])}</div><small>同花色連號</small></div>
-          <div class="tutorial-street"><b>葫蘆</b><div class="tutorial-mini-board">${tutorialMiniCards(["Q♠", "Q♥", "Q♦", "7♣", "7♦"])}</div><small>三條 + 一對</small></div>
-          <div class="tutorial-street"><b>順子</b><div class="tutorial-mini-board">${tutorialMiniCards(["10♣", "9♦", "8♠", "7♥", "6♣"])}</div><small>連號</small></div>
-          <div class="tutorial-street"><b>兩對</b><div class="tutorial-mini-board">${tutorialMiniCards(["10♠", "10♥", "6♣", "6♦"])}</div><small>兩組一對</small></div>
-          <div class="tutorial-street"><b>高牌</b><div class="tutorial-mini-board">${tutorialMiniCards(["K♠", "J♦", "9♣"])}</div><small>沒有組合</small></div>
+      <div class="tutorial-visual-card tutorial-hand-card">
+        <div class="tutorial-visual-title">牌型由大到小</div>
+        <div class="tutorial-hand-ladder">
+          ${tutorialPages.hands.rows.map(row => `
+            <div class="tutorial-hand-rank">
+              <span>${escapeHtml(row[0])}</span>
+              <div class="tutorial-hand-copy">
+                <b>${escapeHtml(row[1])}</b>
+                <small>${escapeHtml(row[2])}</small>
+              </div>
+              ${tutorialRankCards(row[3])}
+            </div>`).join("")}
         </div>
       </div>
       <div class="tutorial-callouts">
-        <div class="tutorial-callout"><strong>先比牌型</strong><span>牌型越高越大，例如同花大於順子。</span></div>
-        <div class="tutorial-callout"><strong>同牌型再比點數</strong><span>例如同樣一對，就先比對子的大小。</span></div>
+        <div class="tutorial-callout"><strong>先看牌型等級</strong><span>數字越小，牌型越強。</span></div>
+        <div class="tutorial-callout"><strong>同牌型再比點數</strong><span>還相同才比較踢腳牌。</span></div>
       </div>`;
   }
 
@@ -2100,24 +2141,17 @@ function tutorialVisual(pageKey) {
       ${tutorialTableDiagram()}
     </div>
     <div class="tutorial-callouts">
-      <div class="tutorial-callout"><strong>底牌</strong><span>下方兩張是你的手牌，只有你能看到。</span></div>
-      <div class="tutorial-callout"><strong>公共牌</strong><span>桌面中央五張牌，所有玩家一起共用。</span></div>
-      <div class="tutorial-callout"><strong>底池</strong><span>下注籌碼會集中到桌面中央，勝利者拿走。</span></div>
+      <div class="tutorial-callout"><strong>底牌</strong><span>下方兩張，只給你自己看。</span></div>
+      <div class="tutorial-callout"><strong>公共牌與底池</strong><span>中央的牌大家共用；籌碼由贏家拿走。</span></div>
     </div>`;
 }
 
 function renderTutorialItems(page) {
   if (page.type === "hands") {
-    return `<div class="tutorial-grid">${page.rows.map(row => `
-      <article class="tutorial-row">
-        <div class="tutorial-badge">${escapeHtml(row[0])}</div>
-        <div class="tutorial-row-title"><strong>${escapeHtml(row[1])}</strong><span>${escapeHtml(row[2])}</span></div>
-        ${tutorialRankCards(row[3])}
-        <div class="tutorial-note">${escapeHtml(row[4])}</div>
-      </article>`).join("")}</div>`;
+    return "";
   }
 
-  return `<div class="tutorial-grid two">${page.items.map((item, index) => `
+  return `<div class="tutorial-grid two">${page.items.slice(0, 4).map((item, index) => `
     <article class="tutorial-info">
       <div class="tutorial-badge">${index + 1}</div>
       <div>
@@ -2156,10 +2190,7 @@ function renderTutorial(pageKey = state.tutorial.activePage) {
   state.tutorial.activePage = pageKey;
   renderTutorialNav();
 
-  let body = renderTutorialItems(page);
-  if (page.table) {
-    body += renderTutorialTable(page.table, pageKey === "allin" ? "邊池資格範例" : "最小加注範例");
-  }
+  const body = renderTutorialItems(page);
 
   els.tutorialContent.innerHTML = `
     <div class="tutorial-title-row">
@@ -2171,7 +2202,6 @@ function renderTutorial(pageKey = state.tutorial.activePage) {
     </div>
     <div class="tutorial-visual-panel">${tutorialVisual(pageKey)}</div>
     ${body}
-    <div class="tutorial-tip">入門重點：先看位置、底池與要補多少，再決定要不要繼續投入籌碼。</div>
   `;
 }
 
@@ -2250,8 +2280,17 @@ function applyLayoutKey(key) {
   els.arena.style.setProperty(layoutVarName(key, "top"), `${item.top}%`);
 }
 
+function applyDialogueArrows() {
+  if (!els.arena) return;
+  Object.keys(DEFAULT_DIALOGUE_ARROWS).forEach(key => {
+    const target = els.arena.querySelector(layoutSelectorFor(key));
+    if (target) target.dataset.arrow = state.layout.arrows[key] || DEFAULT_DIALOGUE_ARROWS[key];
+  });
+}
+
 function applyLayout() {
   Object.keys(DEFAULT_LAYOUT).forEach(applyLayoutKey);
+  applyDialogueArrows();
   applyLayoutPanelPosition();
   updateLayoutEditorUI();
 }
@@ -2305,6 +2344,10 @@ function layoutLabelFor(key) {
   return target?.dataset.layoutLabel || key;
 }
 
+function isDialogueLayoutKey(key) {
+  return /^dialogue[1-6]$/.test(key || "");
+}
+
 function selectLayoutItem(key) {
   if (!state.layout.items[key]) return;
   state.layout.selectedKey = key;
@@ -2345,6 +2388,17 @@ function updateLayoutEditorUI() {
   els.layoutNudgeButtons?.forEach(button => {
     button.disabled = !state.layout.editing || state.layout.locked || !state.layout.selectedKey;
   });
+  if (els.dialogueArrowControls) {
+    const showArrowControls = state.layout.editing && isDialogueLayoutKey(state.layout.selectedKey);
+    els.dialogueArrowControls.hidden = !showArrowControls;
+    if (showArrowControls) {
+      const arrow = state.layout.arrows[state.layout.selectedKey] || DEFAULT_DIALOGUE_ARROWS[state.layout.selectedKey];
+      els.dialogueArrowButtons?.forEach(button => {
+        button.disabled = state.layout.locked;
+        button.classList.toggle("is-active", button.dataset.dialogueArrow === arrow);
+      });
+    }
+  }
 }
 
 function setLayoutEditing(editing) {
@@ -2357,6 +2411,7 @@ function setLayoutEditing(editing) {
 function saveLayout() {
   try {
     localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(state.layout.items));
+    localStorage.setItem(LAYOUT_ARROW_STORAGE_KEY, JSON.stringify(state.layout.arrows));
     saveLayoutPanelPosition();
     announce("版面已儲存");
   } catch (error) {
@@ -2367,9 +2422,11 @@ function saveLayout() {
 
 function resetLayout() {
   state.layout.items = cloneDefaultLayout();
+  state.layout.arrows = cloneDefaultDialogueArrows();
   state.layout.panel = normalizePanelPosition(null);
   try {
     localStorage.removeItem(LAYOUT_STORAGE_KEY);
+    localStorage.removeItem(LAYOUT_ARROW_STORAGE_KEY);
     localStorage.removeItem(LAYOUT_PANEL_STORAGE_KEY);
   } catch (error) {
     console.warn("Layout reset failed:", error);
@@ -2380,6 +2437,7 @@ function resetLayout() {
 
 function autoArrangeLayout() {
   state.layout.items = cloneDefaultLayout();
+  state.layout.arrows = cloneDefaultDialogueArrows();
   applyLayout();
   announce("已套用自動排列");
 }
@@ -2447,6 +2505,17 @@ function nudgeSelectedLayout(direction, { step = LAYOUT_NUDGE_STEP, announceMove
   if (!delta) return;
   moveLayoutItem(key, item.left + delta[0], item.top + delta[1]);
   if (announceMove) announce(`${layoutLabelFor(key)} 已微調`);
+}
+
+function setSelectedDialogueArrow(direction) {
+  const key = state.layout.selectedKey;
+  if (!state.layout.editing || state.layout.locked || !isDialogueLayoutKey(key)) return;
+  if (!DIALOGUE_ARROW_DIRECTIONS.has(direction)) return;
+  state.layout.arrows[key] = direction;
+  const target = els.arena?.querySelector(layoutSelectorFor(key));
+  if (target) target.dataset.arrow = direction;
+  updateLayoutEditorUI();
+  announce(`${layoutLabelFor(key)} 箭頭已調整`);
 }
 
 function handleLayoutKeyboard(event) {
@@ -2645,6 +2714,9 @@ if (els.resetLayoutButton) els.resetLayoutButton.addEventListener("click", reset
 if (els.lockLayoutButton) els.lockLayoutButton.addEventListener("click", toggleLayoutLock);
 els.layoutNudgeButtons?.forEach(button => {
   button.addEventListener("click", () => nudgeSelectedLayout(button.dataset.layoutNudge));
+});
+els.dialogueArrowButtons?.forEach(button => {
+  button.addEventListener("click", () => setSelectedDialogueArrow(button.dataset.dialogueArrow));
 });
 if (els.layoutPanelHandle) {
   els.layoutPanelHandle.addEventListener("pointerdown", beginLayoutPanelDrag);

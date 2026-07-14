@@ -27,3 +27,5 @@ VERSION.md
 ```
 
 若要回到某一版，將該版本資料夾內的 `index.html`、`styles.css`、`app.js` 還原到專案根目錄即可。
+
+最新穩定版：`v55-readable-hand-guide-2026-07-14`，放大教學文字並補回完整牌型示例牌。

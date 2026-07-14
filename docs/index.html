@@ -14,7 +14,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=opponent-cards-v52" />
+    <link rel="stylesheet" href="styles.css?v=readable-hand-guide-v55" />
   </head>
   <body>
     <section id="desktopOnlyNotice" class="desktop-only-notice" aria-live="polite">
@@ -66,6 +66,14 @@
               <button type="button" data-layout-nudge="left" aria-label="向左微調">←</button>
               <button type="button" data-layout-nudge="right" aria-label="向右微調">→</button>
               <button type="button" data-layout-nudge="down" aria-label="向下微調">↓</button>
+            </div>
+            <div id="dialogueArrowControls" class="dialogue-arrow-controls" hidden>
+              <span>對話箭頭方向</span>
+              <small>選到對話泡泡時可調整</small>
+              <button type="button" data-dialogue-arrow="up" aria-label="箭頭往上">↑</button>
+              <button type="button" data-dialogue-arrow="left" aria-label="箭頭往左">←</button>
+              <button type="button" data-dialogue-arrow="right" aria-label="箭頭往右">→</button>
+              <button type="button" data-dialogue-arrow="down" aria-label="箭頭往下">↓</button>
             </div>
           </div>
           <div id="layoutGuides" class="layout-guides" aria-hidden="true">
@@ -210,6 +218,6 @@
         </div>
       </div>
     </section>
-    <script src="app.js?v=opponent-cards-v52"></script>
+    <script src="app.js?v=readable-hand-guide-v55"></script>
   </body>
 </html>
