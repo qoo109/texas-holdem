@@ -20,6 +20,7 @@ const state = {
   lastAggressor: null,
   lastRaiseSize: BIG_BLIND,
   cardMotionUntil: 0,
+  selectedProfilePosition: null,
   coach: {
     enabled: true,
     odds: true,
@@ -51,6 +52,7 @@ const els = {
   showdownBanner: document.querySelector("#showdownBanner"),
   actionToast: document.querySelector("#actionToast"),
   opponents: document.querySelector("#opponents"),
+  aiProfilePanel: document.querySelector("#aiProfilePanel"),
   boardZone: document.querySelector(".board-zone"),
   boardCards: document.querySelector("#boardCards"),
   boardStageLabel: document.querySelector("#boardStageLabel"),
