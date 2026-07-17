@@ -61,6 +61,7 @@ function render() {
     const position = positionLabel(player);
     const statusMeta = seatActionMeta(player);
     const betLabel = player.bet > 0 ? `<div class="seat-street-bet"><span>本輪</span><strong>${player.bet}</strong></div>` : "";
+    const isProfileSelected = state.selectedProfilePosition === player.position;
     const dialogueText = player.dialogue || (state.layout.editing ? "對話" : "");
     const dialogueKey = `dialogue${player.position}`;
     const dialogueArrow = state.layout.arrows[dialogueKey] || DEFAULT_DIALOGUE_ARROWS[dialogueKey] || "down";
@@ -74,7 +75,7 @@ function render() {
       </div>
     `;
     return `
-      <article class="seat seat-pos-${player.position} ${player.folded ? "is-folded" : ""} ${isActive ? "is-active" : ""} ${isWinner ? "is-winner" : ""} ${actionClass}" data-layout-key="seat${player.position}" data-layout-label="${escapeHtml(player.emoji + " " + player.name)}">
+      <article class="seat seat-pos-${player.position} ${player.folded ? "is-folded" : ""} ${isActive ? "is-active" : ""} ${isWinner ? "is-winner" : ""} ${isProfileSelected ? "is-profile-selected" : ""} ${actionClass}" data-layout-key="seat${player.position}" data-layout-label="${escapeHtml(player.emoji + " " + player.name)}" data-profile-position="${player.position}" role="button" tabindex="0" aria-label="查看 ${escapeHtml(player.name)} 角色資訊">
         <div class="seat-header">
           <span class="position-chip position-${positionClass(position)}">${position}</span>
           <div class="seat-identity">
@@ -124,8 +125,72 @@ function render() {
     els.autoNewHandButton.classList.toggle("is-auto-on", state.autoNewHand);
   }
 
+  renderAiProfilePanel();
   renderCoach();
   updateLayoutEditorUI();
+}
+
+function renderAiProfilePanel() {
+  if (!els.aiProfilePanel) return;
+  const selected = state.players.find(player => !player.isHuman && player.position === state.selectedProfilePosition);
+  if (!selected) {
+    els.aiProfilePanel.hidden = true;
+    els.aiProfilePanel.innerHTML = "";
+    return;
+  }
+
+  const meta = aiProfileMeta(selected);
+  const position = positionLabel(selected);
+  const statusMeta = seatActionMeta(selected);
+  const aggression = Math.round(selected.aggression * 100);
+  const bluff = Math.round(selected.bluffRate * 100);
+  const patience = Math.round(selected.patience * 100);
+  const dangerScore = Math.min(5, Math.max(1, Math.round((selected.aggression + selected.bluffRate + (1 - selected.patience * 0.35)) * 2)));
+  const stars = "★★★★★".slice(0, dangerScore) + "☆☆☆☆☆".slice(0, 5 - dangerScore);
+
+  els.aiProfilePanel.hidden = false;
+  els.aiProfilePanel.innerHTML = `
+    <button class="ai-profile-close" type="button" data-profile-close aria-label="關閉角色資訊">×</button>
+    <div class="ai-profile-hero">
+      <span class="ai-profile-avatar">${selected.emoji}</span>
+      <div>
+        <p class="eyebrow">AI Profile</p>
+        <h3>${escapeHtml(selected.name)}</h3>
+        <div class="ai-profile-tags">
+          <span>${escapeHtml(position)}</span>
+          <span>${escapeHtml(selected.style)}</span>
+          <span>${escapeHtml(meta.danger)}</span>
+        </div>
+      </div>
+    </div>
+    <div class="ai-profile-title">
+      <strong>${escapeHtml(meta.title)}</strong>
+      <span>${stars}</span>
+    </div>
+    <p class="ai-profile-summary">${escapeHtml(meta.summary)}</p>
+    <div class="ai-profile-now">
+      <span>籌碼 <strong>${selected.stack}</strong></span>
+      <span>${escapeHtml(statusMeta.label)}${statusMeta.amount ? ` <strong>${statusMeta.amount}</strong>` : ""}</span>
+    </div>
+    <div class="ai-profile-bars">
+      ${renderProfileBar("攻擊", aggression)}
+      ${renderProfileBar("詐唬", bluff)}
+      ${renderProfileBar("耐心", patience)}
+    </div>
+    <ul class="ai-profile-traits">
+      ${meta.traits.map(trait => `<li>${escapeHtml(trait)}</li>`).join("")}
+    </ul>
+  `;
+}
+
+function renderProfileBar(label, value) {
+  return `
+    <div class="ai-profile-bar">
+      <span>${label}</span>
+      <div><i style="width:${value}%"></i></div>
+      <strong>${value}</strong>
+    </div>
+  `;
 }
 
 function renderCard(card, index = 0, { animate = false } = {}) {
