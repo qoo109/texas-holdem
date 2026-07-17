@@ -12,8 +12,113 @@ const AI_ROSTER = [
   { name: "Bruno", emoji: "🐻", style: "Rock", bluffRate: 0.03, aggression: 0.46, patience: 0.9 },
   { name: "Dodo", emoji: "🦌", style: "Cautious", bluffRate: 0.02, aggression: 0.28, patience: 0.82 },
   { name: "Viper", emoji: "🐍", style: "Trap", bluffRate: 0.14, aggression: 0.62, patience: 0.74 },
+  { name: "Nova", emoji: "👽", style: "Alien", bluffRate: 0.18, aggression: 0.72, patience: 0.58 },
+  { name: "Unit-9", emoji: "🤖", style: "Solver", bluffRate: 0.08, aggression: 0.6, patience: 0.86 },
+  { name: "Merlin", emoji: "🧙", style: "Mage", bluffRate: 0.17, aggression: 0.58, patience: 0.76 },
 ];
 const TABLE_AI_COUNT = 6;
+
+const AI_PROFILE_META = {
+  Leo: {
+    title: "獅王壓迫者",
+    danger: "高壓",
+    summary: "喜歡主動把底池做大，短碼時特別敢推。",
+    traits: ["常用加注逼你決定", "牌面乾燥時更敢偷", "被反加注會稍微收斂"],
+  },
+  Toto: {
+    title: "龜派守門員",
+    danger: "低風險",
+    summary: "很少亂來，突然加注通常代表牌真的不差。",
+    traits: ["起手牌很挑", "慢慢等好機會", "不喜歡跟太貴的注"],
+  },
+  Foxy: {
+    title: "桌邊演員",
+    danger: "狡猾",
+    summary: "喜歡講故事和偷小底池，真假很難一眼看穿。",
+    traits: ["詐唬頻率偏高", "會在危險牌面施壓", "被抓包後會短暫安分"],
+  },
+  Wolf: {
+    title: "位置獵手",
+    danger: "穩狠",
+    summary: "有位置就會壓迫，打法比 Leo 更精準。",
+    traits: ["重視位置優勢", "有牌會持續下注", "不常做無意義跟注"],
+  },
+  Pao: {
+    title: "跟注收藏家",
+    danger: "黏人",
+    summary: "很愛看下一張牌，不太容易被小注趕走。",
+    traits: ["Call 很多", "Raise 較少", "聽牌時會黏到底"],
+  },
+  Shark: {
+    title: "Boss 級鯊魚",
+    danger: "危險",
+    summary: "會看價格和籌碼深度，專抓下注尺寸不舒服的人。",
+    traits: ["賠率合適就跟", "會攻擊短碼", "大底池時更冷靜"],
+  },
+  Ace: {
+    title: "空中狙擊手",
+    danger: "精準",
+    summary: "出手不多，但出手通常抓得很準。",
+    traits: ["挑選好時機", "很少連續亂開火", "喜歡攻擊弱線"],
+  },
+  Momo: {
+    title: "亂流製造機",
+    danger: "失控",
+    summary: "節奏最不穩定，會把平靜牌局變成大亂鬥。",
+    traits: ["加注頻率高", "容易突然 All-in", "很難用常規讀牌"],
+  },
+  Nori: {
+    title: "平衡派貓手",
+    danger: "中等",
+    summary: "打法比較平均，不太會露出單一習慣。",
+    traits: ["下注尺寸穩定", "會依牌面調整", "不常過度冒險"],
+  },
+  Bruno: {
+    title: "重拳岩石",
+    danger: "厚重",
+    summary: "出手少，但一旦進池通常很難被嚇跑。",
+    traits: ["只打較強範圍", "下注偏重", "不愛輕率詐唬"],
+  },
+  Dodo: {
+    title: "保命玩家",
+    danger: "可壓",
+    summary: "怕壓力，適合用合理加注逼他犯錯。",
+    traits: ["容易棄牌", "跟注需要好價格", "被大注會很緊張"],
+  },
+  Viper: {
+    title: "Boss 級陷阱術士",
+    danger: "陰險",
+    summary: "喜歡慢打和設陷阱，Check 不一定代表弱。",
+    traits: ["常保留強牌", "河牌前後很會施壓", "喜歡等你先犯錯"],
+  },
+  Nova: {
+    title: "外星讀心者",
+    danger: "未知",
+    summary: "打法不太像正常人，常在奇怪節點做出壓力動作。",
+    traits: ["節奏很跳", "會用非典型尺寸", "越到後街越難猜"],
+  },
+  "Unit-9": {
+    title: "機器解算者",
+    danger: "冷酷",
+    summary: "像計算機一樣看價格，情緒很少影響決策。",
+    traits: ["重視 Pot Odds", "不愛便宜送牌", "下注尺寸穩定"],
+  },
+  Merlin: {
+    title: "牌桌魔法師",
+    danger: "迷惑",
+    summary: "擅長讓你懷疑自己，尤其喜歡在轉牌做文章。",
+    traits: ["常用延遲詐唬", "會慢打強牌", "牌面變化大時最危險"],
+  },
+};
+
+function aiProfileMeta(player) {
+  return AI_PROFILE_META[player?.name] || {
+    title: `${player?.style || "AI"} 牌手`,
+    danger: "觀察中",
+    summary: "打法還需要多看幾手才能判斷。",
+    traits: ["觀察下注尺寸", "注意位置", "別只看單一手牌"],
+  };
+}
 
 const DIALOGUE_BANK = {
   Leo: {
