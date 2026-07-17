@@ -94,10 +94,43 @@ if (els.layoutPanelHandle) {
 }
 
 if (els.arena) {
+  els.arena.addEventListener("click", handleAiProfileClick);
+  els.arena.addEventListener("keydown", handleAiProfileKeydown);
   els.arena.addEventListener("pointerdown", beginLayoutDrag);
   els.arena.addEventListener("pointermove", moveLayoutDrag);
   els.arena.addEventListener("pointerup", endLayoutDrag);
   els.arena.addEventListener("pointercancel", endLayoutDrag);
+}
+
+function handleAiProfileClick(event) {
+  if (event.target.closest("[data-profile-close]")) {
+    state.selectedProfilePosition = null;
+    render();
+    return;
+  }
+
+  if (event.target.closest("#aiProfilePanel")) return;
+
+  const seat = event.target.closest(".seat[data-profile-position]");
+  if (seat && !state.layout.editing) {
+    state.selectedProfilePosition = Number(seat.dataset.profilePosition);
+    render();
+    return;
+  }
+
+  if (!state.layout.editing && state.selectedProfilePosition) {
+    state.selectedProfilePosition = null;
+    render();
+  }
+}
+
+function handleAiProfileKeydown(event) {
+  const seat = event.target.closest(".seat[data-profile-position]");
+  if (!seat || state.layout.editing) return;
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  state.selectedProfilePosition = Number(seat.dataset.profilePosition);
+  render();
 }
 
 function syncCoachSettings() {
