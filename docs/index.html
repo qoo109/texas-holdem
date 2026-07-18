@@ -14,7 +14,7 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=opponent-cards-v52" />
+    <link rel="stylesheet" href="styles.css?v=session-summary-v69" />
   </head>
   <body>
     <section id="desktopOnlyNotice" class="desktop-only-notice" aria-live="polite">
@@ -67,6 +67,14 @@
               <button type="button" data-layout-nudge="right" aria-label="向右微調">→</button>
               <button type="button" data-layout-nudge="down" aria-label="向下微調">↓</button>
             </div>
+            <div id="dialogueArrowControls" class="dialogue-arrow-controls" hidden>
+              <span>對話箭頭方向</span>
+              <small>選到對話泡泡時可調整</small>
+              <button type="button" data-dialogue-arrow="up" aria-label="箭頭往上">↑</button>
+              <button type="button" data-dialogue-arrow="left" aria-label="箭頭往左">←</button>
+              <button type="button" data-dialogue-arrow="right" aria-label="箭頭往右">→</button>
+              <button type="button" data-dialogue-arrow="down" aria-label="箭頭往下">↓</button>
+            </div>
           </div>
           <div id="layoutGuides" class="layout-guides" aria-hidden="true">
             <span class="layout-guide guide-x guide-x-25"></span>
@@ -82,6 +90,7 @@
             <span><em>盲注</em><strong id="cornerBlindsValue">10 / 20</strong></span>
           </div>
           <div id="opponents" class="opponents"></div>
+          <aside id="aiProfilePanel" class="ai-profile-panel" hidden aria-live="polite"></aside>
 
           <section class="board-zone" aria-label="公共牌">
             <div class="pot-chip" data-layout-key="pot" data-layout-label="💰 底池">
@@ -106,6 +115,7 @@
               <div>
                 <p class="seat-label">你的手牌</p>
                 <h2 id="playerName">玩家</h2>
+                <p id="playerStyle" class="player-style">觀察中</p>
                 <p id="playerHandRank" class="hand-rank">等待發牌</p>
               </div>
             </div>
@@ -210,6 +220,31 @@
         </div>
       </div>
     </section>
-    <script src="app.js?v=opponent-cards-v52"></script>
+
+    <section id="sessionSummaryOverlay" class="session-summary-overlay" hidden aria-modal="true" role="dialog" aria-label="本輪結算">
+      <div class="session-summary-modal">
+        <button id="sessionSummaryClose" class="icon-button session-summary-close" type="button" aria-label="關閉並重新開始">×</button>
+        <div id="sessionSummaryContent"></div>
+      </div>
+    </section>
+
+    <script src="js/audio.js?v=session-summary-v69"></script>
+    <script src="js/cards-data.js?v=session-summary-v69"></script>
+    <script src="js/ai-data.js?v=session-summary-v69"></script>
+    <script src="js/config.js?v=session-summary-v69"></script>
+    <script src="js/tutorial-data.js?v=session-summary-v69"></script>
+    <script src="js/layout-ui.js?v=session-summary-v69"></script>
+    <script src="js/card-engine.js?v=session-summary-v69"></script>
+    <script src="js/dialogue.js?v=session-summary-v69"></script>
+    <script src="js/positions.js?v=session-summary-v69"></script>
+    <script src="js/ai-logic.js?v=session-summary-v69"></script>
+    <script src="js/coach.js?v=session-summary-v69"></script>
+    <script src="js/tutorial-ui.js?v=session-summary-v69"></script>
+    <script src="app.js?v=session-summary-v69"></script>
+    <script src="js/game-flow.js?v=session-summary-v69"></script>
+    <script src="js/showdown-actions.js?v=session-summary-v69"></script>
+    <script src="js/render-ui.js?v=session-summary-v69"></script>
+    <script src="js/session-summary.js?v=session-summary-v69"></script>
+    <script src="js/events-boot.js?v=session-summary-v69"></script>
   </body>
 </html>
