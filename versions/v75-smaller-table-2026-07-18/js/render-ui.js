@@ -227,14 +227,9 @@ function renderCardCenter(card) {
 
   if (["J", "Q", "K"].includes(card.label)) {
     return `
-      <span class="face-emblem face-${card.label.toLowerCase()}">
+      <span class="face-emblem">
         <span class="face-rank">${card.label}</span>
         <span class="face-suit">${card.suitSymbol}</span>
-        <span class="pixel-portrait" aria-hidden="true">
-          <span class="pixel-head"></span>
-          <span class="pixel-body"></span>
-          <span class="pixel-prop"></span>
-        </span>
         <span class="face-band"></span>
       </span>
     `;
