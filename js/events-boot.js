@@ -191,6 +191,16 @@ if (desktopOnlyMedia.addEventListener) {
   desktopOnlyMedia.addListener(handleDesktopOnlyChange);
 }
 
+function loadCardThemeUi() {
+  if (document.querySelector('script[data-card-theme-ui]')) return;
+  const script = document.createElement("script");
+  script.src = "js/card-theme-ui.js?v=pixel-card-themes-v1";
+  script.async = false;
+  script.dataset.cardThemeUi = "true";
+  document.body.appendChild(script);
+}
+
 applyTheme(state.theme, { persist: false });
 applyLayout();
+loadCardThemeUi();
 if (!applyDesktopOnlyMode()) startHand();
