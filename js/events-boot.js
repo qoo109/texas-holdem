@@ -194,17 +194,9 @@ if (desktopOnlyMedia.addEventListener) {
 function loadCardThemeUi() {
   if (document.querySelector('script[data-card-theme-ui]')) return;
   const script = document.createElement("script");
-  script.src = "js/card-theme-ui.js?v=owned-decks-only-v3";
+  script.src = "js/card-theme-ui.js?v=storybook-performance-v4";
   script.async = false;
   script.dataset.cardThemeUi = "true";
-  script.addEventListener("load", () => {
-    if (document.querySelector('script[data-owned-decks-only]')) return;
-    const ownedOnlyScript = document.createElement("script");
-    ownedOnlyScript.src = "js/card-collection-owned-only.js?v=owned-decks-only-v3";
-    ownedOnlyScript.async = false;
-    ownedOnlyScript.dataset.ownedDecksOnly = "true";
-    document.body.appendChild(ownedOnlyScript);
-  }, { once: true });
   document.body.appendChild(script);
 }
 
