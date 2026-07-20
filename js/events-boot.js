@@ -194,7 +194,7 @@ if (desktopOnlyMedia.addEventListener) {
 function loadCardThemeUi() {
   if (document.querySelector('script[data-card-theme-ui]')) return;
   const script = document.createElement("script");
-  script.src = "js/card-theme-ui.js?v=pixel-card-themes-v1";
+  script.src = "js/card-theme-ui.js?v=deck-unlocks-v2";
   script.async = false;
   script.dataset.cardThemeUi = "true";
   document.body.appendChild(script);
