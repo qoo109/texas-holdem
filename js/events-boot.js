@@ -246,7 +246,7 @@ async function bootGame() {
   );
   await loadScriptOnce(
     'script[data-ai-emotion-face-ui]',
-    "js/ai-emotion-face-ui.js?v=emoji-mood-v1",
+    "js/ai-emotion-face-ui.js?v=character-mood-actions-v2",
     "data-ai-emotion-face-ui",
   );
   await loadScriptOnce(
