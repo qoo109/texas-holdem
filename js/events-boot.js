@@ -240,6 +240,11 @@ async function bootGame() {
     "data-audio-recovery",
   );
   await loadScriptOnce(
+    'script[data-layout-size-controls]',
+    "js/layout-size-controls.js?v=balanced-size-editor-v1",
+    "data-layout-size-controls",
+  );
+  await loadScriptOnce(
     'script[data-ai-timing]',
     "js/ai-timing.js?v=personality-experience-v1",
     "data-ai-timing",
