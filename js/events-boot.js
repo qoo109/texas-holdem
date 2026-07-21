@@ -191,12 +191,25 @@ if (desktopOnlyMedia.addEventListener) {
   desktopOnlyMedia.addListener(handleDesktopOnlyChange);
 }
 
+function loadSplitAudioControls() {
+  if (document.querySelector('script[data-split-audio-controls]')) return;
+  const script = document.createElement("script");
+  script.src = "js/audio-controls-split.js?v=split-controls-v1";
+  script.async = false;
+  script.dataset.splitAudioControls = "true";
+  document.body.appendChild(script);
+}
+
 function loadContinuousBgm() {
-  if (document.querySelector('script[data-continuous-bgm]')) return;
+  if (document.querySelector('script[data-continuous-bgm]')) {
+    loadSplitAudioControls();
+    return;
+  }
   const script = document.createElement("script");
   script.src = "js/bgm-light-continuous.js?v=upbeat-loop-v1";
   script.async = false;
   script.dataset.continuousBgm = "true";
+  script.addEventListener("load", loadSplitAudioControls, { once: true });
   document.body.appendChild(script);
 }
 
