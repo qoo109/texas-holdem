@@ -2,12 +2,12 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "texasHoldemLayoutSizesV1";
+  const STORAGE_KEY = "texasHoldemLayoutSizesV2";
   const DEFAULTS = Object.freeze({
     heroCard: 92,
     boardCard: 86,
     aiCard: 44,
-    aiSeat: 158,
+    aiSeat: 176,
     aiProfile: 272,
   });
 
@@ -15,7 +15,7 @@
     heroCard: [70, 115],
     boardCard: [65, 105],
     aiCard: [32, 58],
-    aiSeat: [142, 188],
+    aiSeat: [150, 210],
     aiProfile: [230, 330],
   });
 
@@ -104,7 +104,7 @@
         --layout-hero-card-width: 92px;
         --layout-board-card-width: 86px;
         --layout-ai-card-width: 44px;
-        --layout-ai-seat-width: 158px;
+        --layout-ai-seat-width: 176px;
         --layout-ai-profile-width: 272px;
       }
 
@@ -120,14 +120,86 @@
 
       html body .seat,
       html body .seat-header {
-        width: clamp(142px, min(var(--layout-ai-seat-width), 16vw), 188px) !important;
-        inline-size: clamp(142px, min(var(--layout-ai-seat-width), 16vw), 188px) !important;
-        max-width: clamp(142px, min(var(--layout-ai-seat-width), 16vw), 188px) !important;
+        width: clamp(150px, min(var(--layout-ai-seat-width), 18vw), 210px) !important;
+        inline-size: clamp(150px, min(var(--layout-ai-seat-width), 18vw), 210px) !important;
+        max-width: clamp(150px, min(var(--layout-ai-seat-width), 18vw), 210px) !important;
       }
       html body .seat-header {
-        min-height: 58px !important;
-        padding-top: 9px !important;
-        padding-bottom: 8px !important;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) 58px !important;
+        grid-template-rows: repeat(3, 20px) !important;
+        align-items: center !important;
+        gap: 2px 7px !important;
+        min-height: 74px !important;
+        padding: 7px 7px 7px 8px !important;
+        overflow: hidden !important;
+      }
+      html body .seat-header .seat-identity {
+        grid-column: 1 !important;
+        grid-row: 1 / 4 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        overflow: visible !important;
+      }
+      html body .seat-header .seat-identity > div {
+        min-width: 0 !important;
+        width: 100% !important;
+      }
+      html body .seat-header .position-chip {
+        position: static !important;
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        justify-self: end !important;
+        min-width: 34px !important;
+        max-width: 58px !important;
+      }
+      html body .seat-header > .emotion-chip {
+        position: static !important;
+        grid-column: 2 !important;
+        grid-row: 2 !important;
+        justify-self: end !important;
+        max-width: 58px !important;
+        min-height: 18px !important;
+        padding: 2px 6px !important;
+        font-size: .58rem !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
+      html body .seat-header .seat-status {
+        position: static !important;
+        grid-column: 2 !important;
+        grid-row: 3 !important;
+        justify-self: end !important;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: 58px !important;
+        min-height: 18px !important;
+        padding: 2px 6px !important;
+      }
+      html body .seat-header .seat-status strong {
+        display: none !important;
+      }
+      html body .seat-header .seat-status.is-thinking {
+        width: 58px !important;
+        min-width: 58px !important;
+        padding-right: 18px !important;
+      }
+      html body .seat-meta {
+        gap: 0 !important;
+        overflow: visible !important;
+      }
+      html body .seat-meta strong {
+        display: block !important;
+        min-width: 4ch !important;
+        max-width: 100% !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: nowrap !important;
+        font-size: 1.02rem !important;
+        font-variant-numeric: tabular-nums !important;
+      }
+      html body .seat-meta .mini-chip-stack {
+        display: none !important;
       }
       html body .player-emoji {
         width: 29px !important;
@@ -135,7 +207,12 @@
         font-size: 1.14rem !important;
       }
       html body .seat h2 {
+        max-width: 100% !important;
         font-size: .94rem !important;
+      }
+      html body .seat-street-bet {
+        min-width: 82px !important;
+        margin-top: 3px !important;
       }
 
       html body .ai-profile-panel {
