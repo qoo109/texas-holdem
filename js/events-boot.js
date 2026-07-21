@@ -245,6 +245,11 @@ async function bootGame() {
     "data-layout-size-controls",
   );
   await loadScriptOnce(
+    'script[data-ai-emotion-face-ui]',
+    "js/ai-emotion-face-ui.js?v=emoji-mood-v1",
+    "data-ai-emotion-face-ui",
+  );
+  await loadScriptOnce(
     'script[data-ai-timing]',
     "js/ai-timing.js?v=personality-experience-v1",
     "data-ai-timing",
