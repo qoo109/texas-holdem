@@ -323,6 +323,11 @@ async function bootGame() {
     "js/ai-timing.js?v=personality-experience-v1",
     "data-ai-timing",
   );
+  await loadScriptOnce(
+    'script[data-ai-turn-indicator]',
+    "js/ai-turn-indicator.js?v=countdown-ring-v1",
+    "data-ai-turn-indicator",
+  );
 
   Audio.setMuted?.(state.isMuted);
   if (!applyDesktopOnlyMode()) startHand();
