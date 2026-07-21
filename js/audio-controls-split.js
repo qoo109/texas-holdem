@@ -57,12 +57,26 @@
     if (bgmOutput) bgmOutput.textContent = `${bgmPercent}%`;
   }
 
-  function closeVolumePanel() {
+  function setVolumePanelOpen(open, { focus = false } = {}) {
     const panel = document.querySelector("#audioVolumePanel");
     const button = document.querySelector("#audioVolumeButton");
     if (!panel || !button) return;
-    panel.hidden = true;
-    button.setAttribute("aria-expanded", "false");
+
+    panel.hidden = !open;
+    button.setAttribute("aria-expanded", String(open));
+    button.classList.toggle("is-volume-open", open);
+
+    if (open) {
+      syncVolumeControls();
+      requestAnimationFrame(() => {
+        panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (focus) panel.querySelector("#sfxVolumeSlider")?.focus({ preventScroll: true });
+      });
+    }
+  }
+
+  function closeVolumePanel() {
+    setVolumePanelOpen(false);
   }
 
   function installControls() {
@@ -79,46 +93,95 @@
         background: rgba(112,216,201,.13);
         color: var(--cyan);
       }
-      #audioVolumeButton[aria-expanded="true"] {
+      #audioVolumeButton.is-volume-open {
         border-color: rgba(240,194,94,.55);
         background: rgba(240,194,94,.12);
         color: var(--gold);
       }
       .audio-volume-panel {
-        position: fixed;
-        z-index: 190;
-        top: 72px;
-        right: 16px;
-        width: min(330px, calc(100vw - 24px));
-        padding: 13px;
-        border: 1px solid rgba(240,194,94,.34);
-        border-radius: 13px;
-        background: rgba(5,13,17,.97);
+        position: relative;
+        width: 100%;
+        min-width: 0;
+        padding: 12px;
+        border: 1px solid rgba(240,194,94,.3);
+        border-radius: 12px;
+        background:
+          radial-gradient(circle at 18% 0%, rgba(240,194,94,.12), transparent 48%),
+          linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.025)),
+          rgba(5,13,17,.78);
         color: var(--ink);
-        box-shadow: 0 22px 54px rgba(0,0,0,.48);
-        backdrop-filter: blur(18px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 12px 26px rgba(0,0,0,.2);
+        backdrop-filter: blur(14px) saturate(125%);
+        animation: audioPanelIn 180ms ease both;
       }
       .audio-volume-panel[hidden] { display: none; }
       :root[data-theme="light"] .audio-volume-panel {
-        background: rgba(255,250,239,.98);
-        border-color: rgba(95,69,35,.22);
+        background:
+          radial-gradient(circle at 18% 0%, rgba(181,126,34,.1), transparent 48%),
+          rgba(255,250,239,.96);
+        border-color: rgba(95,69,35,.2);
       }
-      .audio-volume-panel h2 { margin: 0 0 10px; font-size: .86rem; }
+      .audio-volume-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .audio-volume-head div { min-width: 0; }
+      .audio-volume-head p {
+        margin: 0 0 2px;
+        color: var(--gold);
+        font-size: .58rem;
+        font-weight: 950;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .audio-volume-head h2 { margin: 0; font-size: .84rem; }
+      .audio-volume-close {
+        display: grid;
+        place-items: center;
+        width: 25px;
+        height: 25px;
+        min-width: 25px;
+        padding: 0;
+        border: 1px solid rgba(255,255,255,.14);
+        border-radius: 999px;
+        background: rgba(255,255,255,.06);
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+      }
       .audio-volume-row {
         display: grid;
-        grid-template-columns: 72px 1fr 42px;
+        grid-template-columns: 67px minmax(70px, 1fr) 40px;
         align-items: center;
-        gap: 9px;
-        min-height: 38px;
+        gap: 8px;
+        min-height: 36px;
         color: var(--muted);
-        font-size: .7rem;
-        font-weight: 800;
+        font-size: .68rem;
+        font-weight: 850;
       }
-      .audio-volume-row input { width: 100%; }
-      .audio-volume-row output { color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
-      .audio-volume-note { margin: 9px 0 0; color: var(--muted); font-size: .62rem; text-align: center; }
-      @media (max-width: 620px) {
-        .audio-volume-panel { top: 56px; right: 10px; }
+      .audio-volume-row input { width: 100%; min-width: 0; }
+      .audio-volume-row output {
+        color: var(--ink);
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .audio-volume-note {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: .59rem;
+        line-height: 1.35;
+        text-align: center;
+      }
+      @keyframes audioPanelIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .audio-volume-panel { animation: none; }
       }
     `;
     document.head.appendChild(style);
@@ -138,14 +201,19 @@
     volumeButton.setAttribute("aria-controls", "audioVolumePanel");
     bgmButton.insertAdjacentElement("afterend", volumeButton);
 
-    const panel = document.createElement("section");
+    const panel = document.createElement("aside");
     panel.id = "audioVolumePanel";
     panel.className = "audio-volume-panel";
     panel.hidden = true;
-    panel.setAttribute("role", "dialog");
-    panel.setAttribute("aria-label", "音效與背景音樂音量");
+    panel.setAttribute("aria-labelledby", "audioVolumeTitle");
     panel.innerHTML = `
-      <h2>音量控制</h2>
+      <div class="audio-volume-head">
+        <div>
+          <p>Audio Settings</p>
+          <h2 id="audioVolumeTitle">音量控制</h2>
+        </div>
+        <button class="audio-volume-close" type="button" aria-label="收起音量控制">×</button>
+      </div>
       <label class="audio-volume-row">
         <span>🔊 音效</span>
         <input id="sfxVolumeSlider" type="range" min="0" max="100" step="1" value="60" aria-label="遊戲音效音量" />
@@ -156,9 +224,13 @@
         <input id="bgmVolumeSlider" type="range" min="0" max="100" step="1" value="60" aria-label="背景音樂音量" />
         <output id="bgmVolumeOutput">60%</output>
       </label>
-      <p class="audio-volume-note">兩者可獨立調整，範圍 0～100%。</p>
+      <p class="audio-volume-note">設定位於右側資訊欄，兩者可獨立調整並自動儲存。</p>
     `;
-    document.body.appendChild(panel);
+
+    const sideRail = document.querySelector(".side-rail");
+    const historyPanel = document.querySelector("#historyPanel");
+    if (sideRail) sideRail.insertBefore(panel, historyPanel || null);
+    else document.body.appendChild(panel);
 
     bgmButton.addEventListener("click", () => {
       Audio.toggleBgm?.();
@@ -166,10 +238,10 @@
     });
 
     volumeButton.addEventListener("click", () => {
-      panel.hidden = !panel.hidden;
-      volumeButton.setAttribute("aria-expanded", String(!panel.hidden));
-      if (!panel.hidden) syncVolumeControls();
+      setVolumePanelOpen(panel.hidden);
     });
+
+    panel.querySelector(".audio-volume-close")?.addEventListener("click", closeVolumePanel);
 
     panel.querySelector("#sfxVolumeSlider")?.addEventListener("input", event => {
       Audio.setSfxVolume?.(Number(event.target.value) / 100);
@@ -181,9 +253,6 @@
       syncVolumeControls();
     });
 
-    document.addEventListener("click", event => {
-      if (!panel.hidden && !panel.contains(event.target) && !volumeButton.contains(event.target)) closeVolumePanel();
-    });
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && !panel.hidden) closeVolumePanel();
     });
