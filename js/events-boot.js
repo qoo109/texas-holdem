@@ -1,5 +1,69 @@
 // Event wiring and boot sequence
 
+function dockLayoutEditorInSideRail() {
+  const panel = els.layoutEditorPanel;
+  const sideRail = document.querySelector(".side-rail");
+  const historyPanel = document.querySelector("#historyPanel");
+  if (!panel || !sideRail) return;
+
+  if (!sideRail.contains(panel)) sideRail.insertBefore(panel, historyPanel || null);
+  panel.classList.add("is-side-rail-layout-panel");
+
+  const dockLabel = panel.querySelector(".layout-panel-head > span");
+  if (dockLabel) dockLabel.textContent = "右側欄";
+
+  if (!document.querySelector("#sideRailLayoutEditorStyles")) {
+    const style = document.createElement("style");
+    style.id = "sideRailLayoutEditorStyles";
+    style.textContent = `
+      html body .side-rail .layout-editor-panel {
+        position: relative !important;
+        z-index: auto !important;
+        left: auto !important;
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        width: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        margin: 0 !important;
+        overflow: visible !important;
+        transform: none !important;
+        border-radius: 12px !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 12px 26px rgba(0,0,0,.2) !important;
+      }
+      html body .side-rail .layout-panel-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 8px;
+        padding-right: 0 !important;
+        cursor: default !important;
+        user-select: text !important;
+        touch-action: auto !important;
+      }
+      html body .side-rail .layout-panel-head > p,
+      html body .side-rail .layout-panel-head > strong {
+        grid-column: 1;
+      }
+      html body .side-rail .layout-panel-head > span {
+        position: static !important;
+        grid-column: 2;
+        grid-row: 1 / 3;
+        align-self: start;
+        white-space: nowrap;
+      }
+      html body .side-rail .layout-editor-panel.is-panel-dragging,
+      html body .side-rail .layout-editor-panel.is-panel-dragging .layout-panel-head {
+        cursor: default !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+dockLayoutEditorInSideRail();
+
 els.foldButton.addEventListener("click", () => playerAction("fold"));
 els.callButton.addEventListener("click", () => playerAction("call"));
 els.raiseButton.addEventListener("click", () => playerAction("raise"));
@@ -40,6 +104,11 @@ if (els.themeButton) {
 if (els.layoutButton) {
   els.layoutButton.addEventListener("click", () => {
     setLayoutEditing(!state.layout.editing);
+    if (state.layout.editing) {
+      requestAnimationFrame(() => {
+        els.layoutEditorPanel?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    }
   });
 }
 
@@ -99,7 +168,7 @@ els.layoutNudgeButtons?.forEach(button => {
 els.dialogueArrowButtons?.forEach(button => {
   button.addEventListener("click", () => setSelectedDialogueArrow(button.dataset.dialogueArrow));
 });
-if (els.layoutPanelHandle) {
+if (els.layoutPanelHandle && !els.layoutEditorPanel?.classList.contains("is-side-rail-layout-panel")) {
   els.layoutPanelHandle.addEventListener("pointerdown", beginLayoutPanelDrag);
   els.layoutPanelHandle.addEventListener("pointermove", moveLayoutPanelDrag);
   els.layoutPanelHandle.addEventListener("pointerup", endLayoutPanelDrag);
@@ -231,7 +300,7 @@ async function bootGame() {
   );
   await loadScriptOnce(
     'script[data-split-audio-controls]',
-    "js/audio-controls-split.js?v=side-rail-volume-v3",
+    "js/audio-controls-split.js?v=button-popover-v4",
     "data-split-audio-controls",
   );
   await loadScriptOnce(
@@ -241,7 +310,7 @@ async function bootGame() {
   );
   await loadScriptOnce(
     'script[data-layout-size-controls]',
-    "js/layout-size-controls.js?v=ai-seat-readability-v2",
+    "js/layout-size-controls.js?v=side-rail-layout-v3",
     "data-layout-size-controls",
   );
   await loadScriptOnce(
