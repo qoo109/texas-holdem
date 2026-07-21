@@ -9,11 +9,12 @@
   const portraitMedia = window.matchMedia("(max-width: 900px) and (orientation: portrait)");
   let resumeBgmAfterPortrait = false;
 
-  // SFX are already gated by state.isMuted in the game flow. Keep BGM independent.
   Audio.setMuted = value => Boolean(value);
-
-  // Short SFX nodes clean themselves. Do not stop the continuous BGM between hands.
   Audio.cleanup = () => {};
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
 
   function applyDefaultVolumes() {
     try {
@@ -57,6 +58,23 @@
     if (bgmOutput) bgmOutput.textContent = `${bgmPercent}%`;
   }
 
+  function positionVolumePanel() {
+    const panel = document.querySelector("#audioVolumePanel");
+    const button = document.querySelector("#audioVolumeButton");
+    if (!panel || !button || panel.hidden) return;
+
+    const buttonRect = button.getBoundingClientRect();
+    const panelWidth = panel.offsetWidth || 310;
+    const viewportPadding = 10;
+    const preferredLeft = buttonRect.left + buttonRect.width / 2 - panelWidth / 2;
+    const left = clamp(preferredLeft, viewportPadding, window.innerWidth - panelWidth - viewportPadding);
+    const top = Math.min(buttonRect.bottom + 8, window.innerHeight - panel.offsetHeight - viewportPadding);
+
+    panel.style.left = `${Math.round(left)}px`;
+    panel.style.top = `${Math.max(viewportPadding, Math.round(top))}px`;
+    panel.style.setProperty("--audio-arrow-left", `${Math.round(buttonRect.left + buttonRect.width / 2 - left)}px`);
+  }
+
   function setVolumePanelOpen(open, { focus = false } = {}) {
     const panel = document.querySelector("#audioVolumePanel");
     const button = document.querySelector("#audioVolumeButton");
@@ -69,7 +87,7 @@
     if (open) {
       syncVolumeControls();
       requestAnimationFrame(() => {
-        panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        positionVolumePanel();
         if (focus) panel.querySelector("#sfxVolumeSlider")?.focus({ preventScroll: true });
       });
     }
@@ -99,36 +117,54 @@
         color: var(--gold);
       }
       .audio-volume-panel {
-        position: relative;
-        width: 100%;
+        position: fixed;
+        z-index: 220;
+        width: min(310px, calc(100vw - 20px));
         min-width: 0;
         padding: 12px;
-        border: 1px solid rgba(240,194,94,.3);
+        border: 1px solid rgba(240,194,94,.34);
         border-radius: 12px;
         background:
-          radial-gradient(circle at 18% 0%, rgba(240,194,94,.12), transparent 48%),
-          linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.025)),
-          rgba(5,13,17,.78);
+          radial-gradient(circle at 18% 0%, rgba(240,194,94,.14), transparent 48%),
+          linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.025)),
+          rgba(5,13,17,.97);
         color: var(--ink);
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 12px 26px rgba(0,0,0,.2);
-        backdrop-filter: blur(14px) saturate(125%);
-        animation: audioPanelIn 180ms ease both;
+        box-shadow: 0 20px 44px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.1);
+        backdrop-filter: blur(16px) saturate(128%);
+        animation: audioPanelIn 160ms ease both;
+      }
+      .audio-volume-panel::before {
+        content: "";
+        position: absolute;
+        left: clamp(18px, calc(var(--audio-arrow-left, 50%) - 7px), calc(100% - 32px));
+        top: -7px;
+        width: 13px;
+        height: 13px;
+        border-left: 1px solid rgba(240,194,94,.34);
+        border-top: 1px solid rgba(240,194,94,.34);
+        background: rgba(18,25,27,.98);
+        transform: rotate(45deg);
       }
       .audio-volume-panel[hidden] { display: none; }
       :root[data-theme="light"] .audio-volume-panel {
         background:
           radial-gradient(circle at 18% 0%, rgba(181,126,34,.1), transparent 48%),
-          rgba(255,250,239,.96);
-        border-color: rgba(95,69,35,.2);
+          rgba(255,250,239,.98);
+        border-color: rgba(95,69,35,.22);
+      }
+      :root[data-theme="light"] .audio-volume-panel::before {
+        background: rgba(255,250,239,.98);
+        border-color: rgba(95,69,35,.22);
       }
       .audio-volume-head {
+        position: relative;
+        z-index: 1;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
         margin-bottom: 8px;
       }
-      .audio-volume-head div { min-width: 0; }
       .audio-volume-head p {
         margin: 0 0 2px;
         color: var(--gold);
@@ -154,6 +190,8 @@
         cursor: pointer;
       }
       .audio-volume-row {
+        position: relative;
+        z-index: 1;
         display: grid;
         grid-template-columns: 67px minmax(70px, 1fr) 40px;
         align-items: center;
@@ -170,6 +208,8 @@
         font-variant-numeric: tabular-nums;
       }
       .audio-volume-note {
+        position: relative;
+        z-index: 1;
         margin: 7px 0 0;
         color: var(--muted);
         font-size: .59rem;
@@ -224,23 +264,21 @@
         <input id="bgmVolumeSlider" type="range" min="0" max="100" step="1" value="60" aria-label="背景音樂音量" />
         <output id="bgmVolumeOutput">60%</output>
       </label>
-      <p class="audio-volume-note">設定位於右側資訊欄，兩者可獨立調整並自動儲存。</p>
+      <p class="audio-volume-note">兩者可獨立調整，設定會自動儲存。</p>
     `;
-
-    const sideRail = document.querySelector(".side-rail");
-    const historyPanel = document.querySelector("#historyPanel");
-    if (sideRail) sideRail.insertBefore(panel, historyPanel || null);
-    else document.body.appendChild(panel);
+    document.body.appendChild(panel);
 
     bgmButton.addEventListener("click", () => {
       Audio.toggleBgm?.();
       syncBgmButton();
     });
 
-    volumeButton.addEventListener("click", () => {
+    volumeButton.addEventListener("click", event => {
+      event.stopPropagation();
       setVolumePanelOpen(panel.hidden);
     });
 
+    panel.addEventListener("click", event => event.stopPropagation());
     panel.querySelector(".audio-volume-close")?.addEventListener("click", closeVolumePanel);
 
     panel.querySelector("#sfxVolumeSlider")?.addEventListener("input", event => {
@@ -253,9 +291,14 @@
       syncVolumeControls();
     });
 
+    document.addEventListener("click", () => {
+      if (!panel.hidden) closeVolumePanel();
+    });
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && !panel.hidden) closeVolumePanel();
     });
+    window.addEventListener("resize", positionVolumePanel);
+    window.addEventListener("scroll", positionVolumePanel, true);
 
     syncBgmButton();
     syncVolumeControls();
