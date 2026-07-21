@@ -191,26 +191,39 @@ if (desktopOnlyMedia.addEventListener) {
   desktopOnlyMedia.addListener(handleDesktopOnlyChange);
 }
 
-function loadSplitAudioControls() {
-  if (document.querySelector('script[data-split-audio-controls]')) return;
-  const script = document.createElement("script");
-  script.src = "js/audio-controls-split.js?v=split-controls-v1";
-  script.async = false;
-  script.dataset.splitAudioControls = "true";
-  document.body.appendChild(script);
+function loadScriptOnce(selector, src, dataAttribute) {
+  return new Promise(resolve => {
+    if (document.querySelector(selector)) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = false;
+    script.setAttribute(dataAttribute, "true");
+    script.addEventListener("load", resolve, { once: true });
+    script.addEventListener("error", resolve, { once: true });
+    document.body.appendChild(script);
+  });
 }
 
-function loadContinuousBgm() {
-  if (document.querySelector('script[data-continuous-bgm]')) {
-    loadSplitAudioControls();
-    return;
-  }
-  const script = document.createElement("script");
-  script.src = "js/bgm-light-continuous.js?v=upbeat-loop-v1";
-  script.async = false;
-  script.dataset.continuousBgm = "true";
-  script.addEventListener("load", loadSplitAudioControls, { once: true });
-  document.body.appendChild(script);
+async function loadAudioEnhancements() {
+  await loadScriptOnce(
+    'script[data-continuous-bgm]',
+    "js/bgm-light-continuous.js?v=upbeat-loop-v2",
+    "data-continuous-bgm",
+  );
+  await loadScriptOnce(
+    'script[data-sfx-volume-engine]',
+    "js/sfx-volume-engine.js?v=volume-100-v1",
+    "data-sfx-volume-engine",
+  );
+  await loadScriptOnce(
+    'script[data-split-audio-controls]',
+    "js/audio-controls-split.js?v=volume-panel-v2",
+    "data-split-audio-controls",
+  );
 }
 
 function loadCardThemeUi() {
@@ -222,8 +235,20 @@ function loadCardThemeUi() {
   document.body.appendChild(script);
 }
 
+async function bootGame() {
+  await Promise.all([
+    loadAudioEnhancements(),
+    loadScriptOnce(
+      'script[data-ai-timing]',
+      "js/ai-timing.js?v=personality-experience-v1",
+      "data-ai-timing",
+    ),
+  ]);
+
+  if (!applyDesktopOnlyMode()) startHand();
+}
+
 applyTheme(state.theme, { persist: false });
 applyLayout();
-loadContinuousBgm();
 loadCardThemeUi();
-if (!applyDesktopOnlyMode()) startHand();
+bootGame();
