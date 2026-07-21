@@ -241,7 +241,7 @@ async function bootGame() {
   );
   await loadScriptOnce(
     'script[data-layout-size-controls]',
-    "js/layout-size-controls.js?v=balanced-size-editor-v1",
+    "js/layout-size-controls.js?v=ai-seat-readability-v2",
     "data-layout-size-controls",
   );
   await loadScriptOnce(
