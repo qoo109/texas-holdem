@@ -191,6 +191,15 @@ if (desktopOnlyMedia.addEventListener) {
   desktopOnlyMedia.addListener(handleDesktopOnlyChange);
 }
 
+function loadContinuousBgm() {
+  if (document.querySelector('script[data-continuous-bgm]')) return;
+  const script = document.createElement("script");
+  script.src = "js/bgm-light-continuous.js?v=upbeat-loop-v1";
+  script.async = false;
+  script.dataset.continuousBgm = "true";
+  document.body.appendChild(script);
+}
+
 function loadCardThemeUi() {
   if (document.querySelector('script[data-card-theme-ui]')) return;
   const script = document.createElement("script");
@@ -202,5 +211,6 @@ function loadCardThemeUi() {
 
 applyTheme(state.theme, { persist: false });
 applyLayout();
+loadContinuousBgm();
 loadCardThemeUi();
 if (!applyDesktopOnlyMode()) startHand();
