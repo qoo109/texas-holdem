@@ -17,6 +17,7 @@ els.quickBets.addEventListener("click", event => {
 if (els.muteButton) {
   els.muteButton.addEventListener("click", () => {
     state.isMuted = !state.isMuted;
+    Audio.setMuted?.(state.isMuted);
     render();
   });
 }
@@ -208,7 +209,16 @@ function loadScriptOnce(selector, src, dataAttribute) {
   });
 }
 
-async function loadAudioEnhancements() {
+function loadCardThemeUi() {
+  if (document.querySelector('script[data-card-theme-ui]')) return;
+  const script = document.createElement("script");
+  script.src = "js/card-theme-ui.js?v=storybook-performance-v4";
+  script.async = false;
+  script.dataset.cardThemeUi = "true";
+  document.body.appendChild(script);
+}
+
+async function bootGame() {
   await loadScriptOnce(
     'script[data-continuous-bgm]',
     "js/bgm-light-continuous.js?v=upbeat-loop-v2",
@@ -224,27 +234,18 @@ async function loadAudioEnhancements() {
     "js/audio-controls-split.js?v=volume-panel-v2",
     "data-split-audio-controls",
   );
-}
+  await loadScriptOnce(
+    'script[data-audio-recovery]',
+    "js/audio-recovery.js?v=safari-sound-fix-v1",
+    "data-audio-recovery",
+  );
+  await loadScriptOnce(
+    'script[data-ai-timing]',
+    "js/ai-timing.js?v=personality-experience-v1",
+    "data-ai-timing",
+  );
 
-function loadCardThemeUi() {
-  if (document.querySelector('script[data-card-theme-ui]')) return;
-  const script = document.createElement("script");
-  script.src = "js/card-theme-ui.js?v=storybook-performance-v4";
-  script.async = false;
-  script.dataset.cardThemeUi = "true";
-  document.body.appendChild(script);
-}
-
-async function bootGame() {
-  await Promise.all([
-    loadAudioEnhancements(),
-    loadScriptOnce(
-      'script[data-ai-timing]',
-      "js/ai-timing.js?v=personality-experience-v1",
-      "data-ai-timing",
-    ),
-  ]);
-
+  Audio.setMuted?.(state.isMuted);
   if (!applyDesktopOnlyMode()) startHand();
 }
 
