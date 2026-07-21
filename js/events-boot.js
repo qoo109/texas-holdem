@@ -231,7 +231,7 @@ async function bootGame() {
   );
   await loadScriptOnce(
     'script[data-split-audio-controls]',
-    "js/audio-controls-split.js?v=volume-panel-v2",
+    "js/audio-controls-split.js?v=side-rail-volume-v3",
     "data-split-audio-controls",
   );
   await loadScriptOnce(
