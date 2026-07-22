@@ -245,7 +245,8 @@
       state.currentActorIndex = nextPendingActor(position);
       render();
 
-      const gap = clamp(timing.tableGap + random(-70, 170), 260, 780);
+      // Keep a brief visual beat after an action without making the table feel stalled.
+      const gap = clamp(timing.tableGap * 0.4 + random(-40, 80), 80, 240);
       scheduleFollowUp(gap, handNumber);
     }, timing.delay);
   }
