@@ -320,7 +320,7 @@ async function bootGame() {
   );
   await loadScriptOnce(
     'script[data-ai-timing]',
-    "js/ai-timing.js?v=personality-experience-v1",
+    "js/ai-timing.js?v=personality-experience-v2",
     "data-ai-timing",
   );
   await loadScriptOnce(
