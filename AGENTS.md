@@ -4,8 +4,8 @@
 
 - Repository: `qoo109/texas-holdem`
 - Canonical development source: repository root
-- Recommended GitHub Pages source: `main / (root)`
-- Actual GitHub Pages setting: must be confirmed in `Settings → Pages`
+- GitHub Pages source: `Deploy from a branch / main / (root)`
+- Pages setting confirmed by user on 2026-07-22
 
 ## 每次開始前
 
@@ -25,7 +25,7 @@
 ## 不應修改
 
 - 不要在 `docs/` 開發新功能；它是歷史副本。
-- 尚未確認 Pages source 前不要刪除 `docs/`。
+- 完成線上 root 版本與核心功能驗證前不要刪除 `docs/`。
 - 不要建立另一份完整網站副本。
 - 不要刪除最近穩定快照。
 - 不要提交 `.DS_Store`、下載圖片、臨時檔或編輯器快取。
@@ -46,4 +46,4 @@
 - `git diff` 僅包含預期修改。
 - 沒有新增不必要的副本。
 - 線上發布後需檢查 Console 404 與 JavaScript error。
-- 不得在沒有證據時宣稱 Pages source 或線上部署已完成。
+- 不得在沒有證據時宣稱線上部署與功能驗證已完成。
