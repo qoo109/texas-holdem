@@ -19,7 +19,7 @@
 - `app.js`
 - `js/`
 
-`docs/` 是過去留下的副本，不再用於新功能開發。完成線上 root 版本與核心功能驗證前，暫時保留 `docs/`，避免無法快速回查舊副本。
+`docs/` 是過去留下的副本，不再用於新功能開發。GitHub 歷史可還原舊內容；正式刪除前仍需完成最後的 Console 驗證。
 
 ## 目前已完成
 
@@ -27,22 +27,23 @@
 - AI 表情可浮在頭像框外。
 - AI 思考進度條已移除，改用座位發光表示思考與行動。
 - 已修正 AI 行動提示藍光／黃光瞬間跳動。
+- AI 連續行動間的額外空白已調整為 `80–100ms`，不影響角色原本的思考時間。
 - 收藏牌組精簡為 `童趣手繪牌組` 與 `午夜牌組`。
 - 版面編輯器、新手教學、本輪結算均已保留。
 - 已建立 `scripts/validate-static-site.mjs` 靜態網站檢查器。
 - 已建立 `Static site check` GitHub Actions，自動檢查 root 缺檔、路徑與 JavaScript 語法。
-- 已建立 `diagnostics.html`，可從線上網站直接檢查 root 部署、關鍵檔案與最新版 AI 表情標記。
+- `Static site check` 已由使用者確認多次通過。
+- 已建立 `diagnostics.html`，可從線上網站直接檢查 root 部署與關鍵檔案。
+- 線上診斷頁已由使用者確認全部通過。
+- 新牌局、AI 表情、音效/BGM、編輯版面、牌組收藏、新手教學與本輪結算已完成手動驗證。
 - root 已定為 Codex 與人工開發的唯一正式來源。
 - GitHub Pages 已設定為 `main / (root)`。
 
 ## 尚未完成
 
-- 確認 `Static site check` workflow 實際執行並通過。
-- 開啟線上 `diagnostics.html`，確認所有項目通過。
-- 使用瀏覽器 Console 驗證線上頁面沒有 404 或 JavaScript error。
-- 完整驗證新牌局、AI 表情、音效/BGM、編輯版面、牌組收藏、新手教學與本輪結算。
+- 使用瀏覽器 Console 確認遊戲頁面沒有 404 或 JavaScript error。
 - 建立真正操作瀏覽器的 E2E 測試。
-- 待 root 線上版本驗證穩定後，評估移除過期的 `docs/` 副本。
+- 完成最後 Console 驗證後，移除過期的 `docs/` 副本。
 
 ## 已知風險
 
@@ -62,7 +63,7 @@
 6. 不要提交 `.DS_Store`、臨時檔或下載素材原檔。
 7. AI 教練不得讀取或洩露對手底牌。
 8. 提交前必須執行 `node scripts/validate-static-site.mjs`。
-9. 完成線上 root 版本與核心功能驗證前，不得刪除 `docs/`。
+9. 完成最後 Console 驗證前，不得刪除 `docs/`。
 
 ## 不可重做或刪除
 
@@ -76,4 +77,4 @@
 
 ## 下一步
 
-開啟線上 `diagnostics.html` 並確認所有項目通過；接著強制重新整理遊戲頁面，檢查 Console 與核心功能操作流程。
+使用 Safari Web Inspector 開啟遊戲頁面的 Console 與 Network，確認沒有紅色 JavaScript error 或 404。確認通過後即可移除 `docs/` 歷史副本，完成單一來源整理。

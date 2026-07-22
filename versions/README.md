@@ -83,9 +83,10 @@ v77-pixel-card-theme-2026-07-19
 - 關閉結算表後重新從第 1 局開始。
 - 新 AI 買入改為較平滑的 `3000 / 4500 / 7000 / 10000 / 15000`。
 
-目前完整同步位置：
+目前唯一正式同步位置：
 
 ```text
-/Users/qoo/Desktop/德州
-/Users/qoo/Desktop/德州/docs
+/Users/qoo/Documents/GitHub/texas-holdem
 ```
+
+`/Users/qoo/Desktop/德州` 與 Repository 內的 `docs/` 都不是正式開發來源。
