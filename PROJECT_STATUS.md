@@ -7,7 +7,6 @@
 - 正式分支: `main`
 - GitHub Pages 發布來源: `main / (root)`
 - 正式程式來源: Repository root
-- 核對基準 commit: `cc7d763427873fa6c44dc8b831e07b19161e4956`
 
 ## 正式維護範圍
 
@@ -28,13 +27,14 @@
 - 已修正 AI 行動提示藍光／黃光瞬間跳動。
 - 收藏牌組精簡為 `童趣手繪牌組` 與 `午夜牌組`。
 - 版面編輯器、新手教學、本輪結算均已保留。
-- 最近一次 JavaScript 語法檢查已通過。
+- 已建立 `scripts/validate-static-site.mjs` 靜態網站檢查器。
+- 已建立 `Static site check` GitHub Actions，自動檢查缺檔、路徑與 JavaScript 語法。
 
 ## 尚未完成
 
 - 使用瀏覽器 Console 驗證線上頁面沒有 404 或 JavaScript error。
 - 完整驗證新牌局、AI 表情、音效/BGM、編輯版面、牌組收藏、新手教學與本輪結算。
-- 建立瀏覽器 E2E 測試。
+- 建立真正操作瀏覽器的 E2E 測試。
 - 待線上 root 發布驗證穩定後，評估移除過期的 `docs/` 副本。
 
 ## 已知風險
@@ -43,7 +43,7 @@
 - Codex 不會自動把 root 修改同步到 `docs/`。
 - GitHub Desktop 只會提交實際變更的檔案，不會替專案同步副本。
 - GitHub Pages 或瀏覽器快取可能暫時顯示舊版。
-- 目前沒有自動化瀏覽器 E2E 測試。
+- 靜態檢查不能取代真實瀏覽器互動與 Console 驗證。
 
 ## 開發規則
 
@@ -54,6 +54,7 @@
 5. 不要 force push，除非使用者明確同意。
 6. 不要提交 `.DS_Store`、臨時檔或下載素材原檔。
 7. AI 教練不得讀取或洩露對手底牌。
+8. 提交前必須執行 `node scripts/validate-static-site.mjs`。
 
 ## 不可重做或刪除
 
@@ -67,4 +68,4 @@
 
 ## 下一步
 
-打開線上網站並使用瀏覽器開發者工具，確認 root 發布版本沒有 404 或 JavaScript error，接著逐項完成核心功能驗證。
+確認 `Static site check` workflow 通過，之後使用真實瀏覽器驗證線上網站的 Console 與核心操作流程。

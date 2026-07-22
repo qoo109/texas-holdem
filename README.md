@@ -48,15 +48,25 @@ git pull --ff-only
 ## 基本檢查
 
 ```bash
-node --check app.js
-find js -name '*.js' -print0 | xargs -0 -n1 node --check
+node scripts/validate-static-site.mjs
 ```
+
+檢查內容包括：
+
+- root 必要檔案是否存在
+- HTML、CSS 與動態 JavaScript 引用是否缺檔
+- 是否誤用不適合 GitHub Project Pages 的 `/` 絕對路徑
+- root JavaScript 語法是否正確
+
+每次 push 到 `main` 或建立 Pull Request 時，GitHub Actions 都會自動執行相同檢查。
 
 ## 發布流程
 
 1. 在 Repository root 修改與測試。
-2. 使用 GitHub Desktop 或 Git 提交至 `main`。
-3. 等待 GitHub Pages 更新。
-4. 強制重新整理網站並查看瀏覽器 Console。
+2. 執行 `node scripts/validate-static-site.mjs`。
+3. 使用 GitHub Desktop 或 Git 提交至 `main`。
+4. 確認 `Static site check` 通過。
+5. 等待 GitHub Pages 更新。
+6. 強制重新整理網站並查看瀏覽器 Console。
 
 詳細狀態請看 `PROJECT_STATUS.md`。
