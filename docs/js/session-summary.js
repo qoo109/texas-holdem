@@ -26,6 +26,8 @@ function renderSessionSummary() {
   const styleMetrics = heroStyleShapeMetrics(stats);
   const achievements = buildHeroAchievements(stats, profile);
   const analysis = buildHeroAnalysis(stats, profile);
+  const totalActions = Math.max(1, (stats.calls || 0) + (stats.raises || 0) + (stats.folds || 0) + (stats.allIns || 0) + (stats.checks || 0));
+  const vpipRate = Math.round(((stats.vpip || 0) / Math.max(1, stats.hands || 0)) * 100);
   const sampleNote = stats.hands < 5
     ? `<span class="session-sample-note">樣本偏少：至少 5 手後，風格輪廓會比較準。</span>`
     : "";
@@ -35,8 +37,13 @@ function renderSessionSummary() {
       <div>
         <p class="eyebrow">Session Report</p>
         <h2>本輪結算</h2>
-        <span>Owl 籌碼歸零，這場先收工。看完統整後會重新從第 1 局開始。</span>
+        <span>Owl 籌碼歸零，這場先收工。看完重點後會重新從第 1 局開始。</span>
         ${sampleNote}
+      </div>
+      <div class="session-hero-stats">
+        ${renderKeyStat("完成", stats.hands, "手")}
+        ${renderKeyStat("入池率", vpipRate, "%")}
+        ${renderKeyStat("最大底池", stats.biggestPot || 0, "")}
       </div>
     </section>
 
@@ -51,23 +58,25 @@ function renderSessionSummary() {
         ${renderSessionActionChart(actionRatios, stats)}
       </div>
 
-      <div class="session-card">
-        <h3>成就</h3>
-        <div class="achievement-list">
-          ${achievements.map(item => `
-            <span class="achievement-pill">
-              <strong>${escapeHtml(item.title)}</strong>
-              <em>${escapeHtml(item.detail)}</em>
-            </span>
-          `).join("")}
+      <div class="session-card session-review-card">
+        <div>
+          <h3>技術分析</h3>
+          <div class="analysis-list">
+            ${analysis.map(item => `<p>${escapeHtml(item)}</p>`).join("")}
+          </div>
         </div>
-      </div>
-
-      <div class="session-card">
-        <h3>技術分析</h3>
-        <div class="analysis-list">
-          ${analysis.map(item => `<p>${escapeHtml(item)}</p>`).join("")}
+        <div>
+          <h3>本輪成就</h3>
+          <div class="achievement-list">
+            ${achievements.map(item => `
+              <span class="achievement-pill">
+                <strong>${escapeHtml(item.title)}</strong>
+                <em>${escapeHtml(item.detail)}</em>
+              </span>
+            `).join("")}
+          </div>
         </div>
+        <div class="session-action-count">本輪記錄 ${totalActions} 次操作</div>
       </div>
     </section>
 
@@ -231,6 +240,12 @@ function buildHeroAnalysis(stats, profile) {
     lines.push(`最大單次收池 ${stats.bestWin}，代表你有能力在好牌時累積價值。`);
   } else {
     lines.push("這輪沒有明顯大收池，先降低跟注成本，等強牌再把底池做大。");
+  }
+
+  if (stats.wins > 0 && stats.showdowns > 0) {
+    lines.push("下輪目標：贏牌時多想一層下注尺寸，別只求攤牌，試著把強牌價值拿滿。");
+  } else {
+    lines.push("下輪目標：先把入池成本壓低，少用情緒跟注，等位置和牌力都舒服再進攻。");
   }
 
   return lines;

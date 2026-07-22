@@ -20,7 +20,7 @@ const DIALOGUE_COOLDOWN_MS = 6500;
 const MAX_DIALOGUE_PER_STREET = 3;
 const CARD_MOTION_MS = 620;
 const THEME_STORAGE_KEY = "texasHoldemTheme";
-const LAYOUT_STORAGE_KEY = "texasHoldemTableLayoutV2";
+const LAYOUT_STORAGE_KEY = "texasHoldemTableLayoutV3";
 const LAYOUT_PANEL_STORAGE_KEY = "texasHoldemLayoutPanelPositionV1";
 const LAYOUT_ARROW_STORAGE_KEY = "texasHoldemDialogueArrowsV1";
 const HERO_STYLE_STORAGE_KEY = "texasHoldemHeroStyleStatsV1";
@@ -49,7 +49,8 @@ const DEFAULT_LAYOUT = {
   hero: { left: 50, top: 88 },
   heroCards: { left: 43, top: 88 },
   heroPanel: { left: 61, top: 88 },
-  heroStack: { left: 50, top: 77 },
+  heroStack: { left: 50, top: 70 },
+  actions: { left: 82, top: 80 },
 };
 const DEFAULT_DIALOGUE_ARROWS = {
   dialogue1: "left",
@@ -68,6 +69,7 @@ const CENTERED_LAYOUT_KEYS = new Set([
   "heroCards",
   "heroPanel",
   "heroStack",
+  "actions",
   "seatCards1",
   "seatCards2",
   "seatCards3",

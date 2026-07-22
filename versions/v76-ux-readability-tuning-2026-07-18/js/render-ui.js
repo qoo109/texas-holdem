@@ -62,9 +62,7 @@ function render() {
     const isWinner = state.winners.includes(player.name);
     const isThinking = player.status.includes("Thinking");
     const isCurrentActor = player.position === state.currentActorIndex && !state.handOver;
-    const needsAttention = player.status.includes("需") || player.status.includes("加注");
-    const isActive = !player.folded && !isThinking && !isCurrentActor && needsAttention;
-    const turnFocusClass = isThinking ? "ai-turn-active" : "";
+    const isActive = !player.folded && (isCurrentActor || player.status.includes("需") || player.status.includes("加注") || isThinking);
     const actionClass = player.lastAction ? "action-" + player.lastAction : "";
     const position = positionLabel(player);
     const statusMeta = seatActionMeta(player);
@@ -85,7 +83,7 @@ function render() {
       </div>
     `;
     return `
-      <article class="seat seat-pos-${player.position} ${player.folded ? "is-folded" : ""} ${isActive ? "is-active" : ""} ${turnFocusClass} ${isWinner ? "is-winner" : ""} ${isProfileSelected ? "is-profile-selected" : ""} ${actionClass}" data-layout-key="seat${player.position}" data-layout-label="${escapeHtml(player.emoji + " " + player.name)}" data-profile-position="${player.position}" role="button" tabindex="0" aria-label="查看 ${escapeHtml(player.name)} 角色資訊">
+      <article class="seat seat-pos-${player.position} ${player.folded ? "is-folded" : ""} ${isActive ? "is-active" : ""} ${isWinner ? "is-winner" : ""} ${isProfileSelected ? "is-profile-selected" : ""} ${actionClass}" data-layout-key="seat${player.position}" data-layout-label="${escapeHtml(player.emoji + " " + player.name)}" data-profile-position="${player.position}" role="button" tabindex="0" aria-label="查看 ${escapeHtml(player.name)} 角色資訊">
         <div class="seat-header">
           <span class="position-chip position-${positionClass(position)}">${position}</span>
           <div class="seat-identity">
@@ -229,14 +227,9 @@ function renderCardCenter(card) {
 
   if (["J", "Q", "K"].includes(card.label)) {
     return `
-      <span class="face-emblem face-${card.label.toLowerCase()}">
+      <span class="face-emblem">
         <span class="face-rank">${card.label}</span>
         <span class="face-suit">${card.suitSymbol}</span>
-        <span class="pixel-portrait" aria-hidden="true">
-          <span class="pixel-head"></span>
-          <span class="pixel-body"></span>
-          <span class="pixel-prop"></span>
-        </span>
         <span class="face-band"></span>
       </span>
     `;
