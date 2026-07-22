@@ -245,8 +245,8 @@
       state.currentActorIndex = nextPendingActor(position);
       render();
 
-      // Keep a brief visual beat after an action without making the table feel stalled.
-      const gap = clamp(timing.tableGap * 0.4 + random(-40, 80), 80, 240);
+      // Keep only a tiny visual beat between consecutive AI actions.
+      const gap = random(80, 100);
       scheduleFollowUp(gap, handNumber);
     }, timing.delay);
   }
