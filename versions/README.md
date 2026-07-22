@@ -89,4 +89,4 @@ v77-pixel-card-theme-2026-07-19
 /Users/qoo/Documents/GitHub/texas-holdem
 ```
 
-`/Users/qoo/Desktop/德州` 與 Repository 內的 `docs/` 都不是正式開發來源。
+`/Users/qoo/Desktop/德州` 不是正式開發來源。Repository 內的 `docs/` 歷史副本已於 2026-07-22 移除，需要時可從 Git history 還原。
