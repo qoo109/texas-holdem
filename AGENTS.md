@@ -3,8 +3,9 @@
 ## 專案來源
 
 - Repository: `qoo109/texas-holdem`
-- Canonical source: repository root
-- GitHub Pages: `main / (root)`
+- Canonical development source: repository root
+- Recommended GitHub Pages source: `main / (root)`
+- Actual GitHub Pages setting: must be confirmed in `Settings → Pages`
 
 ## 每次開始前
 
@@ -24,6 +25,7 @@
 ## 不應修改
 
 - 不要在 `docs/` 開發新功能；它是歷史副本。
+- 尚未確認 Pages source 前不要刪除 `docs/`。
 - 不要建立另一份完整網站副本。
 - 不要刪除最近穩定快照。
 - 不要提交 `.DS_Store`、下載圖片、臨時檔或編輯器快取。
@@ -36,11 +38,12 @@
 - 維持目前命名與程式風格。
 - 只修改完成需求所需的最小範圍。
 - 不覆蓋已驗證的 AI 表情、行動發光、牌組收藏與版面編輯成果。
-- 修改後至少執行 JavaScript 語法檢查。
+- 修改後至少執行 `node scripts/validate-static-site.mjs`。
 
 ## 完成條件
 
-- 語法檢查通過。
+- 靜態網站檢查通過。
 - `git diff` 僅包含預期修改。
 - 沒有新增不必要的副本。
 - 線上發布後需檢查 Console 404 與 JavaScript error。
+- 不得在沒有證據時宣稱 Pages source 或線上部署已完成。

@@ -1,12 +1,14 @@
-# Deprecated compatibility copy
+# Historical compatibility copy
 
-`docs/` 是過去留下的網站副本，不是目前 GitHub Pages 的正式來源。
+`docs/` 是過去留下的網站副本，不再用於新功能開發。
 
-正式發布與開發來源位於 Repository root：
+唯一正式開發來源位於 Repository root：
 
 - `../index.html`
 - `../styles.css`
 - `../app.js`
 - `../js/`
 
-請勿在 `docs/` 內開發新功能，也不要把 root 的更新人工複製到這裡。待 root 線上版本完成驗證後，可評估移除整個 `docs/` 副本。
+目前尚未透過工具確認 GitHub Pages 實際選擇的是 root 或 `/docs`，因此暫時保留本資料夾。請勿在這裡開發新功能，也不要把它當成最新版本。
+
+完成 `Settings → Pages` 的人工確認、確定網站使用 `main / (root)`，並驗證線上版本穩定後，才可評估移除整個 `docs/` 副本。
