@@ -39,10 +39,10 @@
 - GitHub Pages 已設定並驗證使用 `main / (root)`。
 - `docs/` 歷史副本已移除，專案完成單一網站來源整理。
 - 已建立 Playwright Chromium 最小瀏覽器 E2E 測試與 `Browser E2E` GitHub Actions workflow。
+- `Browser E2E` 第一次 GitHub Actions 執行已由使用者於 2026-07-22 確認通過。
 
 ## 尚未完成
 
-- 確認 `Browser E2E` workflow 第一次執行並通過。
 - 後續可視需要增加 WebKit 與更多下注／結算路徑測試。
 - 後續功能改動需持續進行線上回歸測試。
 
@@ -78,4 +78,4 @@
 
 ## 下一步
 
-確認最新 `Browser E2E` workflow 是否通過。若失敗，下載 `playwright-report` artifact 查看 trace、截圖與影片；若通過，再把首次 E2E 驗證記錄為完成。
+基礎發布、靜態檢查與 Chromium E2E 均已通過。後續可回到遊戲功能迭代；涉及流程或 UI 修改時，需同時通過 `Static site check` 與 `Browser E2E`。若優先強化測試，下一項可增加加注、All-in、攤牌與本輪結算路徑。
