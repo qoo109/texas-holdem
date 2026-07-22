@@ -51,6 +51,43 @@
     const style = document.createElement("style");
     style.id = "aiTurnIndicatorStyles";
     style.textContent = `
+      /* Emotion/action emoji float freely around the avatar instead of being trapped in a small circle. */
+      html body .seat,
+      html body .seat-header,
+      html body .seat-identity,
+      html body .player-emoji,
+      html body .ai-profile-avatar {
+        overflow: visible !important;
+      }
+      html body .ai-emotion-face-badge {
+        width: auto !important;
+        height: auto !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        font-size: 1.08rem !important;
+        line-height: 1 !important;
+        text-shadow:
+          0 2px 4px rgba(0,0,0,.8),
+          0 0 7px rgba(255,255,255,.2) !important;
+      }
+      html body .ai-emotion-face-badge.slot-mood {
+        left: -10px !important;
+        top: -22px !important;
+      }
+      html body .ai-emotion-face-badge.slot-action {
+        right: -10px !important;
+        top: -22px !important;
+      }
+      html body .ai-emotion-face-badge.is-profile {
+        top: -25px !important;
+        font-size: 1.25rem !important;
+      }
+
       html body .seat.ai-turn-active {
         z-index: 12 !important;
         filter:
