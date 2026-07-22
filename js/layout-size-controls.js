@@ -28,6 +28,7 @@
   });
 
   let sizes = readSavedSizes();
+  let sideRailObserver = null;
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
@@ -93,6 +94,22 @@
       const output = document.querySelector(`[data-layout-size-output="${key}"]`);
       if (output) output.textContent = `${sizes[key]}px`;
     });
+  }
+
+  function syncSideRailEditorState() {
+    const panel = document.querySelector("#layoutEditorPanel");
+    const sideRail = document.querySelector(".side-rail");
+    if (!panel || !sideRail) return;
+    sideRail.classList.toggle("is-layout-editor-active", !panel.hidden);
+  }
+
+  function observeSideRailEditorState() {
+    const panel = document.querySelector("#layoutEditorPanel");
+    if (!panel) return;
+    syncSideRailEditorState();
+    sideRailObserver?.disconnect();
+    sideRailObserver = new MutationObserver(syncSideRailEditorState);
+    sideRailObserver.observe(panel, { attributes: true, attributeFilter: ["hidden"] });
   }
 
   function installStyles() {
@@ -229,6 +246,24 @@
         max-height: calc(100% - 16px);
         overflow: auto;
       }
+      html body .side-rail.is-layout-editor-active {
+        grid-template-rows: minmax(0, 1fr) !important;
+        overflow: visible !important;
+        z-index: 24 !important;
+      }
+      html body .side-rail.is-layout-editor-active > #coachPanel,
+      html body .side-rail.is-layout-editor-active > #historyPanel {
+        display: none !important;
+      }
+      html body .side-rail.is-layout-editor-active > #layoutEditorPanel {
+        height: 100% !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+      }
       .layout-size-controls {
         display: grid;
         gap: 7px;
@@ -338,6 +373,7 @@
     installStyles();
     applySizes();
     installControls();
+    observeSideRailEditorState();
   }
 
   window.LayoutSizeController = {
