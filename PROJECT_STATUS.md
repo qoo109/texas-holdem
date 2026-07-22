@@ -4,6 +4,7 @@
 
 - Repository: `qoo109/texas-holdem`
 - 線上網站: `https://qoo109.github.io/texas-holdem/`
+- 線上診斷: `https://qoo109.github.io/texas-holdem/diagnostics.html`
 - 正式分支: `main`
 - 唯一正式開發來源: Repository root
 - GitHub Pages 發布來源: `Deploy from a branch / main / (root)`
@@ -30,12 +31,14 @@
 - 版面編輯器、新手教學、本輪結算均已保留。
 - 已建立 `scripts/validate-static-site.mjs` 靜態網站檢查器。
 - 已建立 `Static site check` GitHub Actions，自動檢查 root 缺檔、路徑與 JavaScript 語法。
+- 已建立 `diagnostics.html`，可從線上網站直接檢查 root 部署、關鍵檔案與最新版 AI 表情標記。
 - root 已定為 Codex 與人工開發的唯一正式來源。
 - GitHub Pages 已設定為 `main / (root)`。
 
 ## 尚未完成
 
 - 確認 `Static site check` workflow 實際執行並通過。
+- 開啟線上 `diagnostics.html`，確認所有項目通過。
 - 使用瀏覽器 Console 驗證線上頁面沒有 404 或 JavaScript error。
 - 完整驗證新牌局、AI 表情、音效/BGM、編輯版面、牌組收藏、新手教學與本輪結算。
 - 建立真正操作瀏覽器的 E2E 測試。
@@ -47,7 +50,7 @@
 - Codex 不會自動把 root 修改同步到 `docs/`；`docs/` 也不再是開發來源。
 - GitHub Desktop 只會提交實際變更的檔案，不會替專案同步副本。
 - GitHub Pages 或瀏覽器快取可能暫時顯示舊版。
-- 靜態檢查不能取代真實瀏覽器互動與 Console 驗證。
+- 靜態與線上資源檢查不能完全取代真實遊戲互動與 Console 驗證。
 
 ## 開發規則
 
@@ -73,4 +76,4 @@
 
 ## 下一步
 
-確認 `Static site check` 通過，接著使用真實瀏覽器強制重新整理線上網站，檢查 Console 與核心功能操作流程。
+開啟線上 `diagnostics.html` 並確認所有項目通過；接著強制重新整理遊戲頁面，檢查 Console 與核心功能操作流程。

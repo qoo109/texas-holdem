@@ -4,7 +4,8 @@
 
 ## 線上網站
 
-`https://qoo109.github.io/texas-holdem/`
+- 遊戲：`https://qoo109.github.io/texas-holdem/`
+- 部署診斷：`https://qoo109.github.io/texas-holdem/diagnostics.html`
 
 ## 唯一正式開發來源
 
@@ -63,6 +64,16 @@ node scripts/validate-static-site.mjs
 
 每次 push 到 `main` 或建立 Pull Request 時，GitHub Actions 都會執行相同檢查。
 
+## 線上部署檢查
+
+打開：
+
+```text
+https://qoo109.github.io/texas-holdem/diagnostics.html
+```
+
+此頁會實際讀取 GitHub Pages 上的關鍵資源，並確認最新 AI 表情程式標記是否上線。
+
 ## 發布流程
 
 1. 在 Repository root 修改與測試。
@@ -70,6 +81,7 @@ node scripts/validate-static-site.mjs
 3. 使用 GitHub Desktop 或 Git 提交至 `main`。
 4. 確認 `Static site check` 通過。
 5. 等待 GitHub Pages 更新。
-6. 強制重新整理網站並查看瀏覽器 Console。
+6. 開啟 `diagnostics.html` 確認全部通過。
+7. 強制重新整理遊戲並查看瀏覽器 Console。
 
 詳細狀態請看 `PROJECT_STATUS.md`。
