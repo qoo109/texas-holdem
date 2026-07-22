@@ -50,7 +50,7 @@ git pull --ff-only
 - `AGENTS.md`
 - `versions/README.md`
 
-## 基本檢查
+## 靜態檢查
 
 ```bash
 node scripts/validate-static-site.mjs
@@ -63,15 +63,33 @@ node scripts/validate-static-site.mjs
 - 是否誤用不適合 GitHub Project Pages 的 `/` 絕對路徑
 - root JavaScript 語法是否正確
 
-每次 push 到 `main` 或建立 Pull Request 時，GitHub Actions 都會執行相同檢查。
+## 瀏覽器 E2E
+
+首次使用：
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+執行最小瀏覽器回歸測試：
+
+```bash
+npm run test:e2e
+```
+
+測試會自動啟動本機靜態伺服器，檢查頁面啟動、六位 AI、玩家手牌、新牌局、玩家行動、遊戲紀錄、新手教學、版面編輯、AI 資訊卡、Console error 與失敗的網路請求。
+
+GitHub Actions 會在 `Browser E2E` workflow 執行相同測試；失敗時會保留 Playwright report、trace、截圖與影片。
 
 ## 發布流程
 
 1. 在 Repository root 修改與測試。
 2. 執行 `node scripts/validate-static-site.mjs`。
-3. 使用 GitHub Desktop 或 Git 提交至 `main`。
-4. 確認 `Static site check` 通過。
-5. 等待 GitHub Pages 更新。
-6. 強制重新整理網站，檢查 Console、Network 與核心功能。
+3. 涉及遊戲流程或介面互動時執行 `npm run test:e2e`。
+4. 使用 GitHub Desktop 或 Git 提交至 `main`。
+5. 確認 `Static site check` 與 `Browser E2E` 通過。
+6. 等待 GitHub Pages 更新。
+7. 強制重新整理網站，檢查 Console、Network 與核心功能。
 
 詳細狀態請看 `PROJECT_STATUS.md`。

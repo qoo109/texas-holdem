@@ -38,10 +38,12 @@
 - 只修改完成需求所需的最小範圍。
 - 不覆蓋已驗證的 AI 表情、行動發光、牌組收藏與版面編輯成果。
 - 修改後執行 `node scripts/validate-static-site.mjs`。
+- 涉及遊戲流程或 UI 互動時執行 `npm run test:e2e`；純文件修改可省略。
 
 ## 完成條件
 
 - 靜態網站檢查通過。
+- 涉及互動的修改需讓 Browser E2E 通過。
 - `git diff` 僅包含預期修改。
 - 沒有新增不必要的副本。
 - 線上發布後檢查 Console、Network 與核心功能。

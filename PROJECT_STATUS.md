@@ -38,10 +38,12 @@
 - Safari Console 與 Network 已由使用者確認沒有紅色 JavaScript error 或 404。
 - GitHub Pages 已設定並驗證使用 `main / (root)`。
 - `docs/` 歷史副本已移除，專案完成單一網站來源整理。
+- 已建立 Playwright Chromium 最小瀏覽器 E2E 測試與 `Browser E2E` GitHub Actions workflow。
 
 ## 尚未完成
 
-- 建立真正操作瀏覽器的 E2E 測試。
+- 確認 `Browser E2E` workflow 第一次執行並通過。
+- 後續可視需要增加 WebKit 與更多下注／結算路徑測試。
 - 後續功能改動需持續進行線上回歸測試。
 
 ## 已知風險
@@ -49,7 +51,7 @@
 - 本機若開啟 `/Users/qoo/Desktop/德州`，可能修改到 GitHub 工作副本以外的舊檔案。
 - GitHub Desktop 只會提交實際變更的檔案，不會替專案同步其他資料夾。
 - GitHub Pages 或瀏覽器快取可能暫時顯示舊版。
-- 靜態與線上資源檢查不能完全取代真實遊戲互動測試。
+- 最小 E2E 只能覆蓋主要 smoke flow，不能取代所有隨機牌局與長時間壓力測試。
 
 ## 開發規則
 
@@ -61,7 +63,8 @@
 6. 不要提交 `.DS_Store`、臨時檔或下載素材原檔。
 7. AI 教練不得讀取或洩露對手底牌。
 8. 提交前必須執行 `node scripts/validate-static-site.mjs`。
-9. 不得重新建立 `docs/` 或其他完整網站副本。
+9. 涉及遊戲流程或 UI 互動時必須執行 `npm run test:e2e`。
+10. 不得重新建立 `docs/` 或其他完整網站副本。
 
 ## 不可重做或刪除
 
@@ -75,4 +78,4 @@
 
 ## 下一步
 
-建立最小瀏覽器 E2E 測試，至少覆蓋頁面啟動、新牌局、玩家操作、AI 行動推進與主要面板開關，避免後續修改造成無聲回歸。
+確認最新 `Browser E2E` workflow 是否通過。若失敗，下載 `playwright-report` artifact 查看 trace、截圖與影片；若通過，再把首次 E2E 驗證記錄為完成。
