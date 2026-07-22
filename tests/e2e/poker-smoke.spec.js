@@ -44,10 +44,22 @@ test("核心牌局與主要面板可正常操作", async ({ page }) => {
   await page.locator("#tutorialCloseButton").click();
   await expect(page.locator("#tutorialOverlay")).toBeHidden();
 
+  const sideRail = page.locator(".side-rail");
   await page.locator("#layoutButton").click();
   await expect(page.locator("#layoutEditorPanel")).toBeVisible();
+  await expect(sideRail).toHaveClass(/is-layout-editor-active/);
+  await expect(page.locator("#coachPanel")).toBeHidden();
+  await expect(page.locator("#historyPanel")).toBeHidden();
+  await expect(page.locator("#layoutSizeControls")).toBeVisible();
+  await expect(page.locator("[data-layout-size]")).toHaveCount(5);
+  await page.locator("[data-layout-size='aiProfile']").scrollIntoViewIfNeeded();
+  await expect(page.locator("[data-layout-size='aiProfile']")).toBeInViewport();
+
   await page.locator("#layoutButton").click();
   await expect(page.locator("#layoutEditorPanel")).toBeHidden();
+  await expect(sideRail).not.toHaveClass(/is-layout-editor-active/);
+  await expect(page.locator("#coachPanel")).toBeVisible();
+  await expect(page.locator("#historyPanel")).toBeVisible();
 
   await page.locator("#opponents .seat").first().click();
   await expect(page.locator("#aiProfilePanel")).toBeVisible();
