@@ -325,7 +325,7 @@ async function bootGame() {
   );
   await loadScriptOnce(
     'script[data-ai-turn-indicator]',
-    "js/ai-turn-indicator.js?v=no-active-flicker-v82",
+    "js/ai-turn-indicator.js?v=single-mood-top-layer-v83",
     "data-ai-turn-indicator",
   );
 
