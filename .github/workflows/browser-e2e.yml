@@ -16,8 +16,15 @@ concurrency:
 
 jobs:
   e2e:
+    name: e2e (${{ matrix.browser }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser:
+          - chromium
+          - webkit
 
     steps:
       - name: Check out repository
@@ -31,17 +38,17 @@ jobs:
       - name: Install test dependency
         run: npm install
 
-      - name: Install Chromium and WebKit
-        run: npx playwright install --with-deps chromium webkit
+      - name: Install ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
 
-      - name: Run browser E2E
-        run: npm run test:e2e
+      - name: Run all six E2E scenarios on ${{ matrix.browser }}
+        run: npx playwright test --project=${{ matrix.browser }}
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: playwright-report-${{ github.run_id }}
+          name: playwright-report-${{ matrix.browser }}-${{ github.run_id }}
           path: |
             playwright-report/
             test-results/
