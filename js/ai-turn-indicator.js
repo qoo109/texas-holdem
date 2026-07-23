@@ -49,7 +49,11 @@
 
   function normalizeAvatarReaction(avatar) {
     const badges = Array.from(avatar.children).filter(child => child.classList?.contains("ai-emotion-face-badge"));
-    const preferred = badges.find(badge => badge.classList.contains("slot-action")) || badges[0] || null;
+    // Keep the actual mood/face reaction when both a mood and an action icon exist.
+    const preferred = badges.find(badge => badge.classList.contains("slot-mood"))
+      || badges.find(badge => badge.classList.contains("slot-action"))
+      || badges[0]
+      || null;
 
     badges.forEach(badge => {
       if (badge !== preferred) badge.remove();
@@ -58,6 +62,7 @@
     if (preferred) {
       preferred.classList.remove("slot-mood", "slot-action");
       preferred.classList.add("slot-single");
+      preferred.setAttribute("aria-hidden", "true");
     }
 
     const seat = avatar.closest(".seat");
@@ -91,7 +96,8 @@
     const style = document.createElement("style");
     style.id = "aiTurnIndicatorStyles";
     style.textContent = `
-      /* Emotion/action emoji float freely around the avatar instead of being trapped in a small circle. */
+      /* Keep one mood emoji floating above every AI seat without being clipped or covered. */
+      html body .opponents,
       html body .seat,
       html body .seat-header,
       html body .seat-identity,
@@ -100,6 +106,8 @@
         overflow: visible !important;
       }
       html body .ai-emotion-face-badge {
+        position: absolute !important;
+        z-index: 100 !important;
         width: auto !important;
         height: auto !important;
         min-width: 0 !important;
@@ -111,6 +119,7 @@
         box-shadow: none !important;
         font-size: 1.08rem !important;
         line-height: 1 !important;
+        pointer-events: none !important;
         text-shadow:
           0 2px 4px rgba(0,0,0,.8),
           0 0 7px rgba(255,255,255,.2) !important;
@@ -124,7 +133,6 @@
         top: -22px !important;
       }
       html body .ai-emotion-face-badge.slot-single {
-        z-index: 30 !important;
         left: 50% !important;
         right: auto !important;
         top: -23px !important;
@@ -136,7 +144,7 @@
       }
 
       html body .seat.ai-turn-active {
-        z-index: 12 !important;
+        z-index: 24 !important;
         filter:
           drop-shadow(0 14px 24px rgba(0,0,0,.26))
           drop-shadow(0 0 24px rgba(255,194,70,.24)) !important;
@@ -176,7 +184,11 @@
         display: none !important;
       }
       html body .seat.has-ai-reaction {
-        z-index: 18 !important;
+        z-index: 80 !important;
+        isolation: isolate !important;
+      }
+      html body .seat.has-ai-reaction.ai-turn-active {
+        z-index: 90 !important;
       }
       html body .seat.has-ai-reaction .seat-header,
       html body .seat.has-ai-reaction .seat-identity,
