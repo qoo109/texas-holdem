@@ -45,10 +45,33 @@ test("玩家加注會扣除籌碼並寫入牌局紀錄", async ({ page }) => {
   const stackBefore = Number(await page.locator("#playerStack").textContent());
   const raiseAmount = page.locator("#raiseAmount");
 
+  await expect(page.locator("#betInfoSummary")).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator("#callButton")).toHaveText(/^(過牌|跟注 \d+)$/);
+  await expect(raiseButton).toHaveText(/^加注至 \d+$/);
+  await expect(page.locator("#allInButton")).toHaveText(/^All-in \d+$/);
+
   await raiseAmount.evaluate(input => {
     input.value = input.min;
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
+
+  const guidance = await page.evaluate(() => {
+    const snapshot = BetInfoUI.snapshot();
+    return {
+      minimumTo: snapshot.minimumTo,
+      effectiveTarget: snapshot.effectiveTarget,
+      remaining: snapshot.remaining,
+      potAfter: snapshot.potAfter,
+      raiseLabel: document.querySelector("#raiseButton")?.textContent,
+      remainingLabel: document.querySelector("#betInfoRemaining")?.textContent,
+      potAfterLabel: document.querySelector("#betInfoPotAfter")?.textContent,
+    };
+  });
+
+  expect(guidance.raiseLabel).toBe(`加注至 ${guidance.effectiveTarget}`);
+  expect(guidance.remainingLabel).toBe(String(guidance.remaining));
+  expect(guidance.potAfterLabel).toBe(String(guidance.potAfter));
+  expect(guidance.effectiveTarget).toBeGreaterThanOrEqual(guidance.minimumTo);
 
   await raiseButton.click();
 
@@ -70,6 +93,7 @@ test("玩家 All-in 會清空可用籌碼並寫入牌局紀錄", async ({ page }
   const allInButton = await waitForHumanAction(page, "#allInButton");
   const stackBefore = Number(await page.locator("#playerStack").textContent());
   expect(stackBefore).toBeGreaterThan(0);
+  await expect(allInButton).toHaveText(`All-in ${stackBefore}`);
 
   await allInButton.click();
 
