@@ -5,6 +5,7 @@
   if (typeof window.render !== "function") return;
 
   const originalRender = window.render;
+  let reactionNormalizationScheduled = false;
 
   function currentThinkingPlayer() {
     if (state.handOver || state.currentActorIndex <= 0) return null;
@@ -46,6 +47,45 @@
     ensureVisuals(player);
   }
 
+  function normalizeAvatarReaction(avatar) {
+    const badges = Array.from(avatar.children).filter(child => child.classList?.contains("ai-emotion-face-badge"));
+    const preferred = badges.find(badge => badge.classList.contains("slot-action")) || badges[0] || null;
+
+    badges.forEach(badge => {
+      if (badge !== preferred) badge.remove();
+    });
+
+    if (preferred) {
+      preferred.classList.remove("slot-mood", "slot-action");
+      preferred.classList.add("slot-single");
+    }
+
+    const seat = avatar.closest(".seat");
+    if (seat) seat.classList.toggle("has-ai-reaction", Boolean(preferred));
+  }
+
+  function normalizeReactionBadges() {
+    document.querySelectorAll(".player-emoji, .ai-profile-avatar").forEach(normalizeAvatarReaction);
+  }
+
+  function scheduleReactionNormalization() {
+    if (reactionNormalizationScheduled) return;
+    reactionNormalizationScheduled = true;
+    queueMicrotask(() => {
+      reactionNormalizationScheduled = false;
+      normalizeReactionBadges();
+    });
+  }
+
+  function observeReactionBadges() {
+    const observer = new MutationObserver(scheduleReactionNormalization);
+    const opponents = document.querySelector("#opponents");
+    const profile = document.querySelector("#aiProfilePanel");
+
+    if (opponents) observer.observe(opponents, { childList: true, subtree: true });
+    if (profile) observer.observe(profile, { childList: true, subtree: true });
+  }
+
   function installStyles() {
     if (document.querySelector("#aiTurnIndicatorStyles")) return;
     const style = document.createElement("style");
@@ -82,6 +122,13 @@
       html body .ai-emotion-face-badge.slot-action {
         right: -10px !important;
         top: -22px !important;
+      }
+      html body .ai-emotion-face-badge.slot-single {
+        z-index: 30 !important;
+        left: 50% !important;
+        right: auto !important;
+        top: -23px !important;
+        transform: translateX(-50%) !important;
       }
       html body .ai-emotion-face-badge.is-profile {
         top: -25px !important;
@@ -128,6 +175,14 @@
       html body .seat.ai-turn-active .seat-status.is-thinking::after {
         display: none !important;
       }
+      html body .seat.has-ai-reaction {
+        z-index: 18 !important;
+      }
+      html body .seat.has-ai-reaction .seat-header,
+      html body .seat.has-ai-reaction .seat-identity,
+      html body .seat.has-ai-reaction .player-emoji {
+        overflow: visible !important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -135,18 +190,25 @@
   window.render = function renderWithAiTurnIndicator(...args) {
     const result = originalRender.apply(this, args);
     syncTurnIndicator();
+    normalizeReactionBadges();
     return result;
   };
 
   installStyles();
+  observeReactionBadges();
+  normalizeReactionBadges();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "hidden") {
       syncTurnIndicator();
+      normalizeReactionBadges();
     }
   });
 
   window.AiTurnIndicator = {
-    refresh: syncTurnIndicator,
+    refresh() {
+      syncTurnIndicator();
+      normalizeReactionBadges();
+    },
     clear: removeTurnVisuals,
   };
 })();
