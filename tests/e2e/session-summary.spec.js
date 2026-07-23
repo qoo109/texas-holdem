@@ -61,11 +61,12 @@ test("玩家籌碼歸零後顯示本輪結算並可回到第 1 局", async ({ pa
   expect(summaryWasShown).toBe(true);
 
   const overlay = page.locator("#sessionSummaryOverlay");
+  const heroStats = overlay.locator(".session-hero-stats");
   await expect(overlay).toBeVisible();
   await expect(overlay.locator(".session-hero h2")).toHaveText("本輪結算");
   await expect(overlay).toContainText("Owl 籌碼歸零");
-  await expect(overlay.locator(".session-hero-stats")).toContainText("完成4手");
-  await expect(overlay.locator(".session-hero-stats")).toContainText("入池率75%");
+  await expect(heroStats).toContainText(/完成\s*4\s*手/);
+  await expect(heroStats).toContainText(/入池率\s*75\s*%/);
   await expect(overlay).toContainText("七邊形風格輪廓");
   await expect(overlay).toContainText("行為統整圖表");
   await expect(overlay).toContainText("技術分析");
