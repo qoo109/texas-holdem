@@ -133,7 +133,7 @@
         top: -22px !important;
       }
       html body .ai-emotion-face-badge.slot-single {
-        left: 50% !important;
+        left: calc(50% + 6px) !important;
         right: auto !important;
         top: -23px !important;
         transform: translateX(-50%) !important;
