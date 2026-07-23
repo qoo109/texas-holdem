@@ -212,3 +212,12 @@
     clear: removeTurnVisuals,
   };
 })();
+
+(() => {
+  if (document.querySelector('script[data-bet-info-ui]')) return;
+  const script = document.createElement("script");
+  script.src = "js/bet-info-ui.js?v=bet-info-v1";
+  script.async = false;
+  script.dataset.betInfoUi = "true";
+  document.body.appendChild(script);
+})();
