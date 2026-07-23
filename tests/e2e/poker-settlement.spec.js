@@ -98,6 +98,9 @@ test("固定牌面攤牌會發出五張公共牌、分配底池並顯示勝者",
   await expect(review).toContainText(/A♠\s*K♦/);
   await expect(review).toContainText("順子");
   await expect(review).toContainText(/河牌\s*加注 100/);
+  await expect(review).toContainText("教練總結");
+  await expect(review.locator(".hand-review-quality")).toHaveText("良好");
+  await expect(review).toContainText("牌力與尺寸協調");
   await expect(review.locator("#handReviewOpponents [data-review-opponent]")).toHaveCount(1);
   await expect(review.locator("[data-review-opponent]")).toContainText(/9♥\s*9♦/);
 
@@ -109,6 +112,9 @@ test("固定牌面攤牌會發出五張公共牌、分配底池並顯示勝者",
     heroStack: human().stack,
     reviewNet: HandReview.latest()?.net,
     reviewOpponentCount: HandReview.latest()?.opponents.length,
+    reviewDecisionScore: HandReview.latest()?.decisionAnalyses?.[0]?.score,
+    reviewDecisionLabel: HandReview.latest()?.decisionAnalyses?.[0]?.qualityLabel,
+    reviewAnalysisVersion: HandReviewAnalysis?.version,
   }));
 
   expect(result).toEqual({
@@ -119,6 +125,9 @@ test("固定牌面攤牌會發出五張公共牌、分配底池並顯示勝者",
     heroStack: 1000,
     reviewNet: 200,
     reviewOpponentCount: 1,
+    reviewDecisionScore: 82,
+    reviewDecisionLabel: "良好",
+    reviewAnalysisVersion: "2.0.0",
   });
 
   await page.waitForTimeout(300);
