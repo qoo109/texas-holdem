@@ -81,6 +81,8 @@ test("固定牌面攤牌會發出五張公共牌、分配底池並顯示勝者",
     state.sessionEnded = false;
     state.heroCurrentHand = createHeroHandTracker();
 
+    HandReview.beginCurrentHand({ startingStack: 800 });
+    recordHeroAction("raise", 100);
     showdown();
   });
 
@@ -90,12 +92,23 @@ test("固定牌面攤牌會發出五張公共牌、分配底池並顯示勝者",
   await expect(page.locator("#showdownBanner")).toContainText("順子");
   await expect(page.locator("#gameLog")).toContainText(/Owl.*順子.*底池 200/);
 
+  const review = page.locator("#handReviewPanel");
+  await expect(review).toBeVisible();
+  await expect(review).toContainText("本手覆盤");
+  await expect(review).toContainText(/A♠\s*K♦/);
+  await expect(review).toContainText("順子");
+  await expect(review).toContainText(/河牌\s*加注 100/);
+  await expect(review.locator("#handReviewOpponents [data-review-opponent]")).toHaveCount(1);
+  await expect(review.locator("[data-review-opponent]")).toContainText(/9♥\s*9♦/);
+
   const result = await page.evaluate(() => ({
     pot: state.pot,
     handOver: state.handOver,
     street: state.street,
     winners: [...state.winners],
     heroStack: human().stack,
+    reviewNet: HandReview.latest()?.net,
+    reviewOpponentCount: HandReview.latest()?.opponents.length,
   }));
 
   expect(result).toEqual({
@@ -104,6 +117,8 @@ test("固定牌面攤牌會發出五張公共牌、分配底池並顯示勝者",
     street: "結算",
     winners: ["Owl"],
     heroStack: 1000,
+    reviewNet: 200,
+    reviewOpponentCount: 1,
   });
 
   await page.waitForTimeout(300);
