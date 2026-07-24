@@ -233,3 +233,12 @@
   script.dataset.betInfoUi = "true";
   document.body.appendChild(script);
 })();
+
+(() => {
+  if (document.querySelector('script[data-layout-corner-resize]')) return;
+  const script = document.createElement("script");
+  script.src = "js/layout-corner-resize.js?v=corner-resize-v1";
+  script.async = false;
+  script.dataset.layoutCornerResize = "true";
+  document.body.appendChild(script);
+})();
