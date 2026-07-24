@@ -51,9 +51,26 @@ test("核心牌局與主要面板可正常操作", async ({ page }) => {
   await expect(page.locator("#coachPanel")).toBeHidden();
   await expect(page.locator("#historyPanel")).toBeHidden();
   await expect(page.locator("#layoutSizeControls")).toBeVisible();
-  await expect(page.locator("[data-layout-size]")).toHaveCount(5);
+  await expect(page.locator("[data-layout-size]")).toHaveCount(6);
+  await expect(page.locator("[data-layout-size='potScale']")).toHaveValue("100");
   await page.locator("[data-layout-size='aiProfile']").scrollIntoViewIfNeeded();
   await expect(page.locator("[data-layout-size='aiProfile']")).toBeInViewport();
+
+  const pot = page.locator('[data-layout-key="pot"]');
+  await pot.click();
+  await expect(pot.locator(":scope > .layout-resize-handle")).toHaveCount(4);
+  await expect(page.locator("#layoutStatus")).toContainText("拖曳四角調整大小");
+
+  const startPotScale = await page.evaluate(() => LayoutCornerResize.getPotScale());
+  const resizeHandle = pot.locator('[data-layout-resize-handle="se"]');
+  const handleBox = await resizeHandle.boundingBox();
+  expect(handleBox).not.toBeNull();
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handleBox.x + handleBox.width / 2 + 36, handleBox.y + handleBox.height / 2 + 20, { steps: 5 });
+  await page.mouse.up();
+  await expect.poll(() => page.evaluate(() => LayoutCornerResize.getPotScale())).toBeGreaterThan(startPotScale);
+  await expect.poll(() => page.locator("[data-layout-size='potScale']").inputValue()).not.toBe("100");
 
   await page.locator("#layoutButton").click();
   await expect(page.locator("#layoutEditorPanel")).toBeHidden();
