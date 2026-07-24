@@ -119,3 +119,12 @@ function currentBigBlind() {
 function currentBuyIn() {
   return currentBlindLevel().buyIn;
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (document.querySelector('script[data-ai-profile-position]')) return;
+  const script = document.createElement("script");
+  script.src = "js/ai-profile-position.js?v=nearby-seat-v1";
+  script.async = false;
+  script.dataset.aiProfilePosition = "true";
+  document.body.appendChild(script);
+}, { once: true });
