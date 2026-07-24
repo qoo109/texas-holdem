@@ -78,10 +78,62 @@ test("核心牌局與主要面板可正常操作", async ({ page }) => {
   await expect(page.locator("#coachPanel")).toBeVisible();
   await expect(page.locator("#historyPanel")).toBeVisible();
 
-  await page.locator("#opponents .seat").first().click();
-  await expect(page.locator("#aiProfilePanel")).toBeVisible();
+  const profile = page.locator("#aiProfilePanel");
+  const firstSeat = page.locator("#opponents .seat").first();
+  await firstSeat.click();
+  await expect(profile).toBeVisible();
+  await expect(profile).toHaveAttribute("data-anchor-position", /.+/);
+  await page.waitForTimeout(220);
+
+  const firstProfilePosition = await page.evaluate(() => {
+    const arena = document.querySelector("#arena").getBoundingClientRect();
+    const panel = document.querySelector("#aiProfilePanel").getBoundingClientRect();
+    return {
+      left: panel.left - arena.left,
+      top: panel.top - arena.top,
+      right: panel.right - arena.left,
+      bottom: panel.bottom - arena.top,
+      arenaWidth: arena.width,
+      arenaHeight: arena.height,
+    };
+  });
+  expect(firstProfilePosition.left).toBeGreaterThanOrEqual(8);
+  expect(firstProfilePosition.top).toBeGreaterThanOrEqual(8);
+  expect(firstProfilePosition.right).toBeLessThanOrEqual(firstProfilePosition.arenaWidth - 8);
+  expect(firstProfilePosition.bottom).toBeLessThanOrEqual(firstProfilePosition.arenaHeight - 8);
+
   await page.locator("[data-profile-close]").click();
-  await expect(page.locator("#aiProfilePanel")).toBeHidden();
+  await expect(profile).toBeHidden();
+
+  const lastSeat = page.locator("#opponents .seat").last();
+  await lastSeat.click();
+  await expect(profile).toBeVisible();
+  await expect(profile).toHaveAttribute("data-anchor-position", /.+/);
+  await page.waitForTimeout(220);
+
+  const secondProfilePosition = await page.evaluate(() => {
+    const arena = document.querySelector("#arena").getBoundingClientRect();
+    const panel = document.querySelector("#aiProfilePanel").getBoundingClientRect();
+    return {
+      left: panel.left - arena.left,
+      top: panel.top - arena.top,
+      right: panel.right - arena.left,
+      bottom: panel.bottom - arena.top,
+      arenaWidth: arena.width,
+      arenaHeight: arena.height,
+    };
+  });
+  expect(secondProfilePosition.left).toBeGreaterThanOrEqual(8);
+  expect(secondProfilePosition.top).toBeGreaterThanOrEqual(8);
+  expect(secondProfilePosition.right).toBeLessThanOrEqual(secondProfilePosition.arenaWidth - 8);
+  expect(secondProfilePosition.bottom).toBeLessThanOrEqual(secondProfilePosition.arenaHeight - 8);
+  expect(
+    Math.abs(firstProfilePosition.left - secondProfilePosition.left)
+      + Math.abs(firstProfilePosition.top - secondProfilePosition.top),
+  ).toBeGreaterThan(80);
+
+  await page.locator("[data-profile-close]").click();
+  await expect(profile).toBeHidden();
 
   const callButton = page.locator("#callButton");
   await expect(callButton).toBeEnabled({ timeout: 30_000 });
